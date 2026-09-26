@@ -23,7 +23,14 @@ export function streamStatus(link: Link, snapshot: Snapshot | null): StreamStatu
   const s = snapshot.state;
   switch (s.kind) {
     case "live":
-      return { tone: "live", label: "Live", detail: "Streaming from Solami, every slot accounted for" };
+      return {
+        tone: "live",
+        label: "Live",
+        detail:
+          snapshot.mode === "offline"
+            ? "Playing the recorded mainnet fixture, every slot accounted for"
+            : "Streaming from Solami, every slot accounted for",
+      };
     case "replaying":
       return {
         tone: "replay",

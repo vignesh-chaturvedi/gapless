@@ -1,0 +1,89 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  rust:
+    name: Rust · fmt, clippy, tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+      - uses: Swatinem/rust-cache@v2
+      - run: cargo fmt --all --check
+      - run: cargo clippy --workspace --all-targets --locked -- -D warnings
+      - run: cargo test --workspace --locked
+
+  console:
+    name: Console · lint, typecheck, build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --dir console lint
+      - run: pnpm --dir console build
+
+  scenarios:
+    name: Chaos scenarios A–D · offline fixture
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - run: cargo build --release --locked -p gapless-server
+      - name: A, B and C against the recorded mainnet fixture
+        run: |
+          ./target/release/gapless-server --offline fixtures/pumpfun-150s.bin.zst --db "$RUNNER_TEMP/abc.db" > "$RUNNER_TEMP/abc.log" 2>&1 &
+          until curl -sf localhost:8790/api/health >/dev/null; do sleep 1; done
+          HOLD=15 scripts/scenario-a.sh
+          scripts/scenario-b.sh
+          HOLD=15 scripts/scenario-c.sh
+      - name: D with a 200-slot replay horizon
+        run: |
+          ./target/release/gapless-server --offline fixtures/pumpfun-150s.bin.zst --horizon 200 --listen 127.0.0.1:8791 --db "$RUNNER_TEMP/d.db" > "$RUNNER_TEMP/d.log" 2>&1 &
+          until curl -sf localhost:8791/api/health >/dev/null; do sleep 1; done
+          GAPLESS_URL=http://127.0.0.1:8791 HOLD=90 scripts/scenario-d.sh
+      - name: Server logs
+        if: failure()
+        run: tail -n 100 "$RUNNER_TEMP"/*.log
+
+  docker:
+    name: Docker · docker compose up
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          load: true
+          tags: gapless:ci
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+      - name: The README's one command, with no key (offline fixture)
+        run: |
+          sed -i 's#^    image: .*#    image: gapless:ci#; /^    build: \.$/d' docker-compose.yml
+          docker compose up -d
+          until curl -sf localhost:8790/api/health >/dev/null; do sleep 1; done
+          curl -sf localhost:8790/api/health | jq -e '.mode == "offline"'
+          curl -sf localhost:8790/live | grep -q '<div id="root">'
+          HOLD=15 scripts/scenario-a.sh
+      - name: Container logs
+        if: always()
+        run: docker compose logs --tail 60

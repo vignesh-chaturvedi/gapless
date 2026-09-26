@@ -1,5 +1,6 @@
 //! HTTP and WebSocket routes. Documented in docs/api.md.
 
+use std::path::Path as FsPath;
 use std::sync::Arc;
 use std::time::Duration;
 
@@ -7,17 +8,20 @@ use axum::extract::ws::{Message, WebSocket, WebSocketUpgrade};
 use axum::extract::{Path, Query, State};
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
-use axum::routing::{get, post};
+use axum::routing::{any, get, post};
 use axum::{Json, Router};
 use serde::Deserialize;
 use serde_json::json;
 use tokio::sync::broadcast::error::RecvError;
 use tower_http::cors::CorsLayer;
+use tower_http::services::{ServeDir, ServeFile};
 
 use crate::app::App;
 
-pub fn router(app: Arc<App>) -> Router {
-    Router::new()
+/// The API, plus the built console when `console` points at it (`console/dist`). Unknown paths
+/// fall back to its `index.html`, so deep links like `/incidents/3` load the app.
+pub fn router(app: Arc<App>, console: Option<&FsPath>) -> Router {
+    let api = Router::new()
         .route("/api/health", get(health))
         .route("/api/state", get(state))
         .route("/api/tape", get(tape))
@@ -27,15 +31,25 @@ pub fn router(app: Arc<App>) -> Router {
         .route("/api/chaos/cut", post(cut))
         .route("/api/chaos/slow", post(slow))
         .route("/api/chaos/patch", post(patch))
+        .route("/api/{*rest}", any(no_such_route))
         .route("/ws", get(ws))
         .layer(CorsLayer::permissive())
-        .with_state(app)
+        .with_state(app);
+    match console {
+        Some(dir) => api
+            .fallback_service(ServeDir::new(dir).fallback(ServeFile::new(dir.join("index.html")))),
+        None => api,
+    }
 }
 
 type AppState = State<Arc<App>>;
 
 fn error(status: StatusCode, message: impl Into<String>) -> Response {
     (status, Json(json!({ "error": message.into() }))).into_response()
+}
+
+async fn no_such_route() -> Response {
+    error(StatusCode::NOT_FOUND, "no such API route; see docs/api.md")
 }
 
 async fn health(State(app): AppState) -> Json<serde_json::Value> {

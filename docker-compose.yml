@@ -1,0 +1,21 @@
+# docker compose up, then open http://localhost:8790
+# With SOLAMI_API_KEY in .env it streams live from Solami; without it, it plays the recorded
+# mainnet fixture. The port is bound to localhost only: the chaos endpoints can kill your stream.
+services:
+  gapless:
+    # The prebuilt image (published on each release). `docker compose up --build` builds it from
+    # this checkout instead, which takes a while: the Solami SDK compiles protoc.
+    image: ghcr.io/vignesh-chaturvedi/gapless:latest
+    pull_policy: missing
+    build: .
+    ports:
+      - "127.0.0.1:8790:8790"
+    env_file:
+      - path: .env
+        required: false
+    volumes:
+      - gapless-data:/data
+    restart: unless-stopped
+
+volumes:
+  gapless-data:

@@ -48,6 +48,10 @@ struct Cli {
     /// SQLite file for incident history.
     #[arg(long, default_value = "gapless.db")]
     db: PathBuf,
+    /// Serve the built console from here (`pnpm --dir console build`). Defaults to
+    /// `console/dist` when it exists; the console is then at the same address as the API.
+    #[arg(long, env = "GAPLESS_CONSOLE")]
+    console: Option<PathBuf>,
     /// Offline only: how many slots back the fixture can replay (Solami's horizon is 3,000).
     /// A small value makes the beyond-the-horizon scenario quick to try.
     #[arg(long, requires = "offline")]
@@ -193,9 +197,20 @@ async fn main() -> Result<()> {
     );
 
     tokio::spawn(engine::run(app.clone(), truth, events, session));
+    let console = cli
+        .console
+        .clone()
+        .or_else(|| Some(PathBuf::from("console/dist")))
+        .filter(|dir| dir.join("index.html").is_file());
     let listener = tokio::net::TcpListener::bind(cli.listen).await?;
-    tracing::info!("listening on http://{}", cli.listen);
-    axum::serve(listener, api::router(app))
+    match &console {
+        Some(dir) => tracing::info!("console at http://{} (from {})", cli.listen, dir.display()),
+        None => tracing::info!(
+            "API at http://{} (build the console with `pnpm --dir console build` to serve it here)",
+            cli.listen
+        ),
+    }
+    axum::serve(listener, api::router(app, console.as_deref()))
         .with_graceful_shutdown(async {
             let _ = tokio::signal::ctrl_c().await;
             tracing::info!("shutting down");

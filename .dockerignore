@@ -1,0 +1,11 @@
+target
+**/node_modules
+console/dist
+.git
+.github
+.env
+.env.*
+!.env.example
+*.db
+*.db-*
+fixtures/raw
