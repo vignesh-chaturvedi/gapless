@@ -1,0 +1,18 @@
+# Rust
+/target
+
+# Node
+node_modules/
+dist/
+
+# Secrets
+.env
+.env.*
+!.env.example
+
+# Raw stream captures are large; commit only trimmed fixtures
+fixtures/raw/
+
+# OS / editor
+.DS_Store
+*.log

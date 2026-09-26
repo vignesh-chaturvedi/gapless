@@ -1,0 +1,5 @@
+{
+  "name": "gapless",
+  "private": true,
+  "packageManager": "pnpm@11.20.0"
+}
