@@ -8,5 +8,6 @@ Reports written by `gapless-verify run` against live mainnet (Pump.fun transacti
 | `phase2-before-patch-run1.json` | killed through the account API, 60 s offline, replayed; no handoff patch yet | 4 missing, all in the handoff slot (target + 8) |
 | `phase2-before-patch-run2.json` | same, repeated | 12 missing, all in the handoff slot (target + 7) |
 | `phase2-kill-60s.json` | same disruption, with the handoff patch | 9,571 / 9,571, complete; the patch recovered 14 |
+| `phase3-server-kill-60s.json` | `gapless-server` incident from `POST /api/chaos/kill {"holdSecs":60}` | 220-slot gap replayed, the patch recovered 21, 11,015 / 11,015 verified complete |
 
 Each file has the whole-window report (per-slot counts, `getBlock` spot checks, verdict) and, for runs with a kill, a separate report for the incident's gap plus the handoff slots. The two "before patch" files predate per-transaction positions and causes; see `docs/spike.md` for that analysis.

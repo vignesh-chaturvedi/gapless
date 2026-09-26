@@ -13,6 +13,11 @@ dist/
 # Raw stream captures are large; commit only trimmed fixtures
 fixtures/raw/
 
+# Local incident history
+*.db
+*.db-shm
+*.db-wal
+
 # OS / editor
 .DS_Store
 *.log

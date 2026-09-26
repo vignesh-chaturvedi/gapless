@@ -64,6 +64,22 @@ enum Cmd {
     Unary,
     /// Summarize a capture written by `record`.
     Inspect { path: PathBuf },
+    /// Count the target program's instructions in a capture, by Anchor discriminator.
+    Analyze { path: PathBuf },
+    /// Count the target program's Anchor events in a capture.
+    Events { path: PathBuf },
+    /// Cut a capture down to a committed fixture: a time window, logs and balances stripped,
+    /// zstd-compressed.
+    Trim {
+        path: PathBuf,
+        #[arg(long)]
+        out: PathBuf,
+        /// Seconds to skip from the start.
+        #[arg(long, default_value_t = 10)]
+        skip: u64,
+        #[arg(long, default_value_t = 150)]
+        secs: u64,
+    },
     /// Record the live stream to fixtures/raw/ for offline development.
     Record {
         #[arg(long, default_value_t = 600)]
@@ -96,8 +112,17 @@ async fn main() -> Result<()> {
         .install_default()
         .ok();
     let cli = Cli::parse();
-    if let Cmd::Inspect { path } = &cli.cmd {
-        return inspect::inspect(path);
+    match &cli.cmd {
+        Cmd::Inspect { path } => return inspect::inspect(path),
+        Cmd::Analyze { path } => return inspect::analyze(path),
+        Cmd::Events { path } => return inspect::events(path),
+        Cmd::Trim {
+            path,
+            out,
+            skip,
+            secs,
+        } => return inspect::trim(path, out, *skip, *secs),
+        _ => {}
     }
     let env = env::Env::load()?;
     match cli.cmd {
@@ -112,6 +137,8 @@ async fn main() -> Result<()> {
         Cmd::Blocks { count, concurrency } => blocks::blocks(&env, count, concurrency).await,
         Cmd::Record { secs, out } => stream::record(&env, secs, out).await,
         Cmd::Unary => stream::unary(&env).await,
-        Cmd::Inspect { .. } => unreachable!("handled before loading the environment"),
+        Cmd::Inspect { .. } | Cmd::Analyze { .. } | Cmd::Events { .. } | Cmd::Trim { .. } => {
+            unreachable!("handled before loading the environment")
+        }
     }
 }

@@ -20,3 +20,5 @@ anyhow.workspace = true
 clap.workspace = true
 dotenvy.workspace = true
 bs58.workspace = true
+gapless.workspace = true
+sha2.workspace = true

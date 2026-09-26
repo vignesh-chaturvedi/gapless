@@ -1,0 +1,2103 @@
+{
+ "chaos": "killed through Solami's account API, then offline for 60s",
+ "detail": "stream terminated by user",
+ "duplicates": 45,
+ "durationMs": 79979,
+ "gap": {
+  "first": 450540475,
+  "last": 450540694
+ },
+ "id": 1,
+ "lastCompleteSlot": 450540474,
+ "naiveDoubleCounts": 45,
+ "openedAt": 1790389682036,
+ "patch": {
+  "error": null,
+  "recovered": 21,
+  "slots": {
+   "first": 450540694,
+   "last": 450540714
+  }
+ },
+ "reason": {
+  "code": "killed",
+  "text": "killed through Solami's account API"
+ },
+ "recoveredAt": 1790389762015,
+ "replayed": 8139,
+ "resumeFrom": 450540475,
+ "sessionIncident": 1,
+ "status": "verified",
+ "steps": [
+  {
+   "attempt": 1,
+   "ended": null,
+   "endedDetail": null,
+   "fromSlot": 450540475,
+   "startedAt": 1790389742219,
+   "targetSlot": 450540694,
+   "transactions": 8139
+  }
+ ],
+ "unrecoverable": null,
+ "verification": {
+  "error": null,
+  "range": {
+   "first": 450540475,
+   "last": 450540758
+  },
+  "report": {
+   "addresses": [
+    "6EF8rrecthR5Dkzon8Nwu78hRvfCKubJ14M5uBEwF6P"
+   ],
+   "delivered": 11015,
+   "elapsed_ms": 40394,
+   "expected": 11015,
+   "finalized_tip": 450540833,
+   "landed_elsewhere": [],
+   "matched": 11015,
+   "missing": [],
+   "orphaned": [],
+   "per_slot": [
+    {
+     "delivered": 45,
+     "expected": 45,
+     "has_block": true,
+     "matched": 45,
+     "slot": 450540475
+    },
+    {
+     "delivered": 10,
+     "expected": 10,
+     "has_block": true,
+     "matched": 10,
+     "slot": 450540476
+    },
+    {
+     "delivered": 22,
+     "expected": 22,
+     "has_block": true,
+     "matched": 22,
+     "slot": 450540477
+    },
+    {
+     "delivered": 30,
+     "expected": 30,
+     "has_block": true,
+     "matched": 30,
+     "slot": 450540478
+    },
+    {
+     "delivered": 27,
+     "expected": 27,
+     "has_block": true,
+     "matched": 27,
+     "slot": 450540479
+    },
+    {
+     "delivered": 28,
+     "expected": 28,
+     "has_block": true,
+     "matched": 28,
+     "slot": 450540480
+    },
+    {
+     "delivered": 13,
+     "expected": 13,
+     "has_block": true,
+     "matched": 13,
+     "slot": 450540481
+    },
+    {
+     "delivered": 17,
+     "expected": 17,
+     "has_block": true,
+     "matched": 17,
+     "slot": 450540482
+    },
+    {
+     "delivered": 23,
+     "expected": 23,
+     "has_block": true,
+     "matched": 23,
+     "slot": 450540483
+    },
+    {
+     "delivered": 21,
+     "expected": 21,
+     "has_block": true,
+     "matched": 21,
+     "slot": 450540484
+    },
+    {
+     "delivered": 11,
+     "expected": 11,
+     "has_block": true,
+     "matched": 11,
+     "slot": 450540485
+    },
+    {
+     "delivered": 37,
+     "expected": 37,
+     "has_block": true,
+     "matched": 37,
+     "slot": 450540486
+    },
+    {
+     "delivered": 12,
+     "expected": 12,
+     "has_block": true,
+     "matched": 12,
+     "slot": 450540487
+    },
+    {
+     "delivered": 84,
+     "expected": 84,
+     "has_block": true,
+     "matched": 84,
+     "slot": 450540488
+    },
+    {
+     "delivered": 17,
+     "expected": 17,
+     "has_block": true,
+     "matched": 17,
+     "slot": 450540489
+    },
+    {
+     "delivered": 35,
+     "expected": 35,
+     "has_block": true,
+     "matched": 35,
+     "slot": 450540490
+    },
+    {
+     "delivered": 24,
+     "expected": 24,
+     "has_block": true,
+     "matched": 24,
+     "slot": 450540491
+    },
+    {
+     "delivered": 26,
+     "expected": 26,
+     "has_block": true,
+     "matched": 26,
+     "slot": 450540492
+    },
+    {
+     "delivered": 23,
+     "expected": 23,
+     "has_block": true,
+     "matched": 23,
+     "slot": 450540493
+    },
+    {
+     "delivered": 33,
+     "expected": 33,
+     "has_block": true,
+     "matched": 33,
+     "slot": 450540494
+    },
+    {
+     "delivered": 26,
+     "expected": 26,
+     "has_block": true,
+     "matched": 26,
+     "slot": 450540495
+    },
+    {
+     "delivered": 38,
+     "expected": 38,
+     "has_block": true,
+     "matched": 38,
+     "slot": 450540496
+    },
+    {
+     "delivered": 25,
+     "expected": 25,
+     "has_block": true,
+     "matched": 25,
+     "slot": 450540497
+    },
+    {
+     "delivered": 56,
+     "expected": 56,
+     "has_block": true,
+     "matched": 56,
+     "slot": 450540498
+    },
+    {
+     "delivered": 41,
+     "expected": 41,
+     "has_block": true,
+     "matched": 41,
+     "slot": 450540499
+    },
+    {
+     "delivered": 0,
+     "expected": 0,
+     "has_block": true,
+     "matched": 0,
+     "slot": 450540500
+    },
+    {
+     "delivered": 32,
+     "expected": 32,
+     "has_block": true,
+     "matched": 32,
+     "slot": 450540501
+    },
+    {
+     "delivered": 29,
+     "expected": 29,
+     "has_block": true,
+     "matched": 29,
+     "slot": 450540502
+    },
+    {
+     "delivered": 30,
+     "expected": 30,
+     "has_block": true,
+     "matched": 30,
+     "slot": 450540503
+    },
+    {
+     "delivered": 59,
+     "expected": 59,
+     "has_block": true,
+     "matched": 59,
+     "slot": 450540504
+    },
+    {
+     "delivered": 51,
+     "expected": 51,
+     "has_block": true,
+     "matched": 51,
+     "slot": 450540505
+    },
+    {
+     "delivered": 36,
+     "expected": 36,
+     "has_block": true,
+     "matched": 36,
+     "slot": 450540506
+    },
+    {
+     "delivered": 21,
+     "expected": 21,
+     "has_block": true,
+     "matched": 21,
+     "slot": 450540507
+    },
+    {
+     "delivered": 21,
+     "expected": 21,
+     "has_block": true,
+     "matched": 21,
+     "slot": 450540508
+    },
+    {
+     "delivered": 22,
+     "expected": 22,
+     "has_block": true,
+     "matched": 22,
+     "slot": 450540509
+    },
+    {
+     "delivered": 39,
+     "expected": 39,
+     "has_block": true,
+     "matched": 39,
+     "slot": 450540510
+    },
+    {
+     "delivered": 23,
+     "expected": 23,
+     "has_block": true,
+     "matched": 23,
+     "slot": 450540511
+    },
+    {
+     "delivered": 21,
+     "expected": 21,
+     "has_block": true,
+     "matched": 21,
+     "slot": 450540512
+    },
+    {
+     "delivered": 16,
+     "expected": 16,
+     "has_block": true,
+     "matched": 16,
+     "slot": 450540513
+    },
+    {
+     "delivered": 19,
+     "expected": 19,
+     "has_block": true,
+     "matched": 19,
+     "slot": 450540514
+    },
+    {
+     "delivered": 42,
+     "expected": 42,
+     "has_block": true,
+     "matched": 42,
+     "slot": 450540515
+    },
+    {
+     "delivered": 27,
+     "expected": 27,
+     "has_block": true,
+     "matched": 27,
+     "slot": 450540516
+    },
+    {
+     "delivered": 28,
+     "expected": 28,
+     "has_block": true,
+     "matched": 28,
+     "slot": 450540517
+    },
+    {
+     "delivered": 26,
+     "expected": 26,
+     "has_block": true,
+     "matched": 26,
+     "slot": 450540518
+    },
+    {
+     "delivered": 27,
+     "expected": 27,
+     "has_block": true,
+     "matched": 27,
+     "slot": 450540519
+    },
+    {
+     "delivered": 26,
+     "expected": 26,
+     "has_block": true,
+     "matched": 26,
+     "slot": 450540520
+    },
+    {
+     "delivered": 20,
+     "expected": 20,
+     "has_block": true,
+     "matched": 20,
+     "slot": 450540521
+    },
+    {
+     "delivered": 16,
+     "expected": 16,
+     "has_block": true,
+     "matched": 16,
+     "slot": 450540522
+    },
+    {
+     "delivered": 21,
+     "expected": 21,
+     "has_block": true,
+     "matched": 21,
+     "slot": 450540523
+    },
+    {
+     "delivered": 21,
+     "expected": 21,
+     "has_block": true,
+     "matched": 21,
+     "slot": 450540524
+    },
+    {
+     "delivered": 35,
+     "expected": 35,
+     "has_block": true,
+     "matched": 35,
+     "slot": 450540525
+    },
+    {
+     "delivered": 44,
+     "expected": 44,
+     "has_block": true,
+     "matched": 44,
+     "slot": 450540526
+    },
+    {
+     "delivered": 29,
+     "expected": 29,
+     "has_block": true,
+     "matched": 29,
+     "slot": 450540527
+    },
+    {
+     "delivered": 40,
+     "expected": 40,
+     "has_block": true,
+     "matched": 40,
+     "slot": 450540528
+    },
+    {
+     "delivered": 24,
+     "expected": 24,
+     "has_block": true,
+     "matched": 24,
+     "slot": 450540529
+    },
+    {
+     "delivered": 36,
+     "expected": 36,
+     "has_block": true,
+     "matched": 36,
+     "slot": 450540530
+    },
+    {
+     "delivered": 49,
+     "expected": 49,
+     "has_block": true,
+     "matched": 49,
+     "slot": 450540531
+    },
+    {
+     "delivered": 29,
+     "expected": 29,
+     "has_block": true,
+     "matched": 29,
+     "slot": 450540532
+    },
+    {
+     "delivered": 21,
+     "expected": 21,
+     "has_block": true,
+     "matched": 21,
+     "slot": 450540533
+    },
+    {
+     "delivered": 15,
+     "expected": 15,
+     "has_block": true,
+     "matched": 15,
+     "slot": 450540534
+    },
+    {
+     "delivered": 35,
+     "expected": 35,
+     "has_block": true,
+     "matched": 35,
+     "slot": 450540535
+    },
+    {
+     "delivered": 18,
+     "expected": 18,
+     "has_block": true,
+     "matched": 18,
+     "slot": 450540536
+    },
+    {
+     "delivered": 47,
+     "expected": 47,
+     "has_block": true,
+     "matched": 47,
+     "slot": 450540537
+    },
+    {
+     "delivered": 47,
+     "expected": 47,
+     "has_block": true,
+     "matched": 47,
+     "slot": 450540538
+    },
+    {
+     "delivered": 32,
+     "expected": 32,
+     "has_block": true,
+     "matched": 32,
+     "slot": 450540539
+    },
+    {
+     "delivered": 69,
+     "expected": 69,
+     "has_block": true,
+     "matched": 69,
+     "slot": 450540540
+    },
+    {
+     "delivered": 48,
+     "expected": 48,
+     "has_block": true,
+     "matched": 48,
+     "slot": 450540541
+    },
+    {
+     "delivered": 37,
+     "expected": 37,
+     "has_block": true,
+     "matched": 37,
+     "slot": 450540542
+    },
+    {
+     "delivered": 37,
+     "expected": 37,
+     "has_block": true,
+     "matched": 37,
+     "slot": 450540543
+    },
+    {
+     "delivered": 10,
+     "expected": 10,
+     "has_block": true,
+     "matched": 10,
+     "slot": 450540544
+    },
+    {
+     "delivered": 44,
+     "expected": 44,
+     "has_block": true,
+     "matched": 44,
+     "slot": 450540545
+    },
+    {
+     "delivered": 45,
+     "expected": 45,
+     "has_block": true,
+     "matched": 45,
+     "slot": 450540546
+    },
+    {
+     "delivered": 25,
+     "expected": 25,
+     "has_block": true,
+     "matched": 25,
+     "slot": 450540547
+    },
+    {
+     "delivered": 25,
+     "expected": 25,
+     "has_block": true,
+     "matched": 25,
+     "slot": 450540548
+    },
+    {
+     "delivered": 33,
+     "expected": 33,
+     "has_block": true,
+     "matched": 33,
+     "slot": 450540549
+    },
+    {
+     "delivered": 31,
+     "expected": 31,
+     "has_block": true,
+     "matched": 31,
+     "slot": 450540550
+    },
+    {
+     "delivered": 24,
+     "expected": 24,
+     "has_block": true,
+     "matched": 24,
+     "slot": 450540551
+    },
+    {
+     "delivered": 41,
+     "expected": 41,
+     "has_block": true,
+     "matched": 41,
+     "slot": 450540552
+    },
+    {
+     "delivered": 22,
+     "expected": 22,
+     "has_block": true,
+     "matched": 22,
+     "slot": 450540553
+    },
+    {
+     "delivered": 25,
+     "expected": 25,
+     "has_block": true,
+     "matched": 25,
+     "slot": 450540554
+    },
+    {
+     "delivered": 34,
+     "expected": 34,
+     "has_block": true,
+     "matched": 34,
+     "slot": 450540555
+    },
+    {
+     "delivered": 30,
+     "expected": 30,
+     "has_block": true,
+     "matched": 30,
+     "slot": 450540556
+    },
+    {
+     "delivered": 20,
+     "expected": 20,
+     "has_block": true,
+     "matched": 20,
+     "slot": 450540557
+    },
+    {
+     "delivered": 25,
+     "expected": 25,
+     "has_block": true,
+     "matched": 25,
+     "slot": 450540558
+    },
+    {
+     "delivered": 35,
+     "expected": 35,
+     "has_block": true,
+     "matched": 35,
+     "slot": 450540559
+    },
+    {
+     "delivered": 75,
+     "expected": 75,
+     "has_block": true,
+     "matched": 75,
+     "slot": 450540560
+    },
+    {
+     "delivered": 36,
+     "expected": 36,
+     "has_block": true,
+     "matched": 36,
+     "slot": 450540561
+    },
+    {
+     "delivered": 25,
+     "expected": 25,
+     "has_block": true,
+     "matched": 25,
+     "slot": 450540562
+    },
+    {
+     "delivered": 34,
+     "expected": 34,
+     "has_block": true,
+     "matched": 34,
+     "slot": 450540563
+    },
+    {
+     "delivered": 29,
+     "expected": 29,
+     "has_block": true,
+     "matched": 29,
+     "slot": 450540564
+    },
+    {
+     "delivered": 40,
+     "expected": 40,
+     "has_block": true,
+     "matched": 40,
+     "slot": 450540565
+    },
+    {
+     "delivered": 24,
+     "expected": 24,
+     "has_block": true,
+     "matched": 24,
+     "slot": 450540566
+    },
+    {
+     "delivered": 26,
+     "expected": 26,
+     "has_block": true,
+     "matched": 26,
+     "slot": 450540567
+    },
+    {
+     "delivered": 37,
+     "expected": 37,
+     "has_block": true,
+     "matched": 37,
+     "slot": 450540568
+    },
+    {
+     "delivered": 36,
+     "expected": 36,
+     "has_block": true,
+     "matched": 36,
+     "slot": 450540569
+    },
+    {
+     "delivered": 36,
+     "expected": 36,
+     "has_block": true,
+     "matched": 36,
+     "slot": 450540570
+    },
+    {
+     "delivered": 43,
+     "expected": 43,
+     "has_block": true,
+     "matched": 43,
+     "slot": 450540571
+    },
+    {
+     "delivered": 40,
+     "expected": 40,
+     "has_block": true,
+     "matched": 40,
+     "slot": 450540572
+    },
+    {
+     "delivered": 48,
+     "expected": 48,
+     "has_block": true,
+     "matched": 48,
+     "slot": 450540573
+    },
+    {
+     "delivered": 46,
+     "expected": 46,
+     "has_block": true,
+     "matched": 46,
+     "slot": 450540574
+    },
+    {
+     "delivered": 35,
+     "expected": 35,
+     "has_block": true,
+     "matched": 35,
+     "slot": 450540575
+    },
+    {
+     "delivered": 21,
+     "expected": 21,
+     "has_block": true,
+     "matched": 21,
+     "slot": 450540576
+    },
+    {
+     "delivered": 33,
+     "expected": 33,
+     "has_block": true,
+     "matched": 33,
+     "slot": 450540577
+    },
+    {
+     "delivered": 57,
+     "expected": 57,
+     "has_block": true,
+     "matched": 57,
+     "slot": 450540578
+    },
+    {
+     "delivered": 39,
+     "expected": 39,
+     "has_block": true,
+     "matched": 39,
+     "slot": 450540579
+    },
+    {
+     "delivered": 25,
+     "expected": 25,
+     "has_block": true,
+     "matched": 25,
+     "slot": 450540580
+    },
+    {
+     "delivered": 55,
+     "expected": 55,
+     "has_block": true,
+     "matched": 55,
+     "slot": 450540581
+    },
+    {
+     "delivered": 39,
+     "expected": 39,
+     "has_block": true,
+     "matched": 39,
+     "slot": 450540582
+    },
+    {
+     "delivered": 23,
+     "expected": 23,
+     "has_block": true,
+     "matched": 23,
+     "slot": 450540583
+    },
+    {
+     "delivered": 10,
+     "expected": 10,
+     "has_block": true,
+     "matched": 10,
+     "slot": 450540584
+    },
+    {
+     "delivered": 34,
+     "expected": 34,
+     "has_block": true,
+     "matched": 34,
+     "slot": 450540585
+    },
+    {
+     "delivered": 26,
+     "expected": 26,
+     "has_block": true,
+     "matched": 26,
+     "slot": 450540586
+    },
+    {
+     "delivered": 24,
+     "expected": 24,
+     "has_block": true,
+     "matched": 24,
+     "slot": 450540587
+    },
+    {
+     "delivered": 43,
+     "expected": 43,
+     "has_block": true,
+     "matched": 43,
+     "slot": 450540588
+    },
+    {
+     "delivered": 25,
+     "expected": 25,
+     "has_block": true,
+     "matched": 25,
+     "slot": 450540589
+    },
+    {
+     "delivered": 16,
+     "expected": 16,
+     "has_block": true,
+     "matched": 16,
+     "slot": 450540590
+    },
+    {
+     "delivered": 24,
+     "expected": 24,
+     "has_block": true,
+     "matched": 24,
+     "slot": 450540591
+    },
+    {
+     "delivered": 22,
+     "expected": 22,
+     "has_block": true,
+     "matched": 22,
+     "slot": 450540592
+    },
+    {
+     "delivered": 23,
+     "expected": 23,
+     "has_block": true,
+     "matched": 23,
+     "slot": 450540593
+    },
+    {
+     "delivered": 40,
+     "expected": 40,
+     "has_block": true,
+     "matched": 40,
+     "slot": 450540594
+    },
+    {
+     "delivered": 34,
+     "expected": 34,
+     "has_block": true,
+     "matched": 34,
+     "slot": 450540595
+    },
+    {
+     "delivered": 30,
+     "expected": 30,
+     "has_block": true,
+     "matched": 30,
+     "slot": 450540596
+    },
+    {
+     "delivered": 22,
+     "expected": 22,
+     "has_block": true,
+     "matched": 22,
+     "slot": 450540597
+    },
+    {
+     "delivered": 20,
+     "expected": 20,
+     "has_block": true,
+     "matched": 20,
+     "slot": 450540598
+    },
+    {
+     "delivered": 13,
+     "expected": 13,
+     "has_block": true,
+     "matched": 13,
+     "slot": 450540599
+    },
+    {
+     "delivered": 11,
+     "expected": 11,
+     "has_block": true,
+     "matched": 11,
+     "slot": 450540600
+    },
+    {
+     "delivered": 30,
+     "expected": 30,
+     "has_block": true,
+     "matched": 30,
+     "slot": 450540601
+    },
+    {
+     "delivered": 16,
+     "expected": 16,
+     "has_block": true,
+     "matched": 16,
+     "slot": 450540602
+    },
+    {
+     "delivered": 14,
+     "expected": 14,
+     "has_block": true,
+     "matched": 14,
+     "slot": 450540603
+    },
+    {
+     "delivered": 27,
+     "expected": 27,
+     "has_block": true,
+     "matched": 27,
+     "slot": 450540604
+    },
+    {
+     "delivered": 17,
+     "expected": 17,
+     "has_block": true,
+     "matched": 17,
+     "slot": 450540605
+    },
+    {
+     "delivered": 13,
+     "expected": 13,
+     "has_block": true,
+     "matched": 13,
+     "slot": 450540606
+    },
+    {
+     "delivered": 37,
+     "expected": 37,
+     "has_block": true,
+     "matched": 37,
+     "slot": 450540607
+    },
+    {
+     "delivered": 39,
+     "expected": 39,
+     "has_block": true,
+     "matched": 39,
+     "slot": 450540608
+    },
+    {
+     "delivered": 15,
+     "expected": 15,
+     "has_block": true,
+     "matched": 15,
+     "slot": 450540609
+    },
+    {
+     "delivered": 19,
+     "expected": 19,
+     "has_block": true,
+     "matched": 19,
+     "slot": 450540610
+    },
+    {
+     "delivered": 23,
+     "expected": 23,
+     "has_block": true,
+     "matched": 23,
+     "slot": 450540611
+    },
+    {
+     "delivered": 16,
+     "expected": 16,
+     "has_block": true,
+     "matched": 16,
+     "slot": 450540612
+    },
+    {
+     "delivered": 17,
+     "expected": 17,
+     "has_block": true,
+     "matched": 17,
+     "slot": 450540613
+    },
+    {
+     "delivered": 28,
+     "expected": 28,
+     "has_block": true,
+     "matched": 28,
+     "slot": 450540614
+    },
+    {
+     "delivered": 32,
+     "expected": 32,
+     "has_block": true,
+     "matched": 32,
+     "slot": 450540615
+    },
+    {
+     "delivered": 16,
+     "expected": 16,
+     "has_block": true,
+     "matched": 16,
+     "slot": 450540616
+    },
+    {
+     "delivered": 18,
+     "expected": 18,
+     "has_block": true,
+     "matched": 18,
+     "slot": 450540617
+    },
+    {
+     "delivered": 19,
+     "expected": 19,
+     "has_block": true,
+     "matched": 19,
+     "slot": 450540618
+    },
+    {
+     "delivered": 23,
+     "expected": 23,
+     "has_block": true,
+     "matched": 23,
+     "slot": 450540619
+    },
+    {
+     "delivered": 28,
+     "expected": 28,
+     "has_block": true,
+     "matched": 28,
+     "slot": 450540620
+    },
+    {
+     "delivered": 23,
+     "expected": 23,
+     "has_block": true,
+     "matched": 23,
+     "slot": 450540621
+    },
+    {
+     "delivered": 25,
+     "expected": 25,
+     "has_block": true,
+     "matched": 25,
+     "slot": 450540622
+    },
+    {
+     "delivered": 37,
+     "expected": 37,
+     "has_block": true,
+     "matched": 37,
+     "slot": 450540623
+    },
+    {
+     "delivered": 21,
+     "expected": 21,
+     "has_block": true,
+     "matched": 21,
+     "slot": 450540624
+    },
+    {
+     "delivered": 18,
+     "expected": 18,
+     "has_block": true,
+     "matched": 18,
+     "slot": 450540625
+    },
+    {
+     "delivered": 16,
+     "expected": 16,
+     "has_block": true,
+     "matched": 16,
+     "slot": 450540626
+    },
+    {
+     "delivered": 27,
+     "expected": 27,
+     "has_block": true,
+     "matched": 27,
+     "slot": 450540627
+    },
+    {
+     "delivered": 7,
+     "expected": 7,
+     "has_block": true,
+     "matched": 7,
+     "slot": 450540628
+    },
+    {
+     "delivered": 31,
+     "expected": 31,
+     "has_block": true,
+     "matched": 31,
+     "slot": 450540629
+    },
+    {
+     "delivered": 57,
+     "expected": 57,
+     "has_block": true,
+     "matched": 57,
+     "slot": 450540630
+    },
+    {
+     "delivered": 27,
+     "expected": 27,
+     "has_block": true,
+     "matched": 27,
+     "slot": 450540631
+    },
+    {
+     "delivered": 58,
+     "expected": 58,
+     "has_block": true,
+     "matched": 58,
+     "slot": 450540632
+    },
+    {
+     "delivered": 20,
+     "expected": 20,
+     "has_block": true,
+     "matched": 20,
+     "slot": 450540633
+    },
+    {
+     "delivered": 22,
+     "expected": 22,
+     "has_block": true,
+     "matched": 22,
+     "slot": 450540634
+    },
+    {
+     "delivered": 18,
+     "expected": 18,
+     "has_block": true,
+     "matched": 18,
+     "slot": 450540635
+    },
+    {
+     "delivered": 26,
+     "expected": 26,
+     "has_block": true,
+     "matched": 26,
+     "slot": 450540636
+    },
+    {
+     "delivered": 41,
+     "expected": 41,
+     "has_block": true,
+     "matched": 41,
+     "slot": 450540637
+    },
+    {
+     "delivered": 84,
+     "expected": 84,
+     "has_block": true,
+     "matched": 84,
+     "slot": 450540638
+    },
+    {
+     "delivered": 44,
+     "expected": 44,
+     "has_block": true,
+     "matched": 44,
+     "slot": 450540639
+    },
+    {
+     "delivered": 21,
+     "expected": 21,
+     "has_block": true,
+     "matched": 21,
+     "slot": 450540640
+    },
+    {
+     "delivered": 26,
+     "expected": 26,
+     "has_block": true,
+     "matched": 26,
+     "slot": 450540641
+    },
+    {
+     "delivered": 33,
+     "expected": 33,
+     "has_block": true,
+     "matched": 33,
+     "slot": 450540642
+    },
+    {
+     "delivered": 40,
+     "expected": 40,
+     "has_block": true,
+     "matched": 40,
+     "slot": 450540643
+    },
+    {
+     "delivered": 120,
+     "expected": 120,
+     "has_block": true,
+     "matched": 120,
+     "slot": 450540644
+    },
+    {
+     "delivered": 32,
+     "expected": 32,
+     "has_block": true,
+     "matched": 32,
+     "slot": 450540645
+    },
+    {
+     "delivered": 23,
+     "expected": 23,
+     "has_block": true,
+     "matched": 23,
+     "slot": 450540646
+    },
+    {
+     "delivered": 20,
+     "expected": 20,
+     "has_block": true,
+     "matched": 20,
+     "slot": 450540647
+    },
+    {
+     "delivered": 38,
+     "expected": 38,
+     "has_block": true,
+     "matched": 38,
+     "slot": 450540648
+    },
+    {
+     "delivered": 17,
+     "expected": 17,
+     "has_block": true,
+     "matched": 17,
+     "slot": 450540649
+    },
+    {
+     "delivered": 21,
+     "expected": 21,
+     "has_block": true,
+     "matched": 21,
+     "slot": 450540650
+    },
+    {
+     "delivered": 17,
+     "expected": 17,
+     "has_block": true,
+     "matched": 17,
+     "slot": 450540651
+    },
+    {
+     "delivered": 35,
+     "expected": 35,
+     "has_block": true,
+     "matched": 35,
+     "slot": 450540652
+    },
+    {
+     "delivered": 34,
+     "expected": 34,
+     "has_block": true,
+     "matched": 34,
+     "slot": 450540653
+    },
+    {
+     "delivered": 26,
+     "expected": 26,
+     "has_block": true,
+     "matched": 26,
+     "slot": 450540654
+    },
+    {
+     "delivered": 20,
+     "expected": 20,
+     "has_block": true,
+     "matched": 20,
+     "slot": 450540655
+    },
+    {
+     "delivered": 42,
+     "expected": 42,
+     "has_block": true,
+     "matched": 42,
+     "slot": 450540656
+    },
+    {
+     "delivered": 15,
+     "expected": 15,
+     "has_block": true,
+     "matched": 15,
+     "slot": 450540657
+    },
+    {
+     "delivered": 38,
+     "expected": 38,
+     "has_block": true,
+     "matched": 38,
+     "slot": 450540658
+    },
+    {
+     "delivered": 28,
+     "expected": 28,
+     "has_block": true,
+     "matched": 28,
+     "slot": 450540659
+    },
+    {
+     "delivered": 31,
+     "expected": 31,
+     "has_block": true,
+     "matched": 31,
+     "slot": 450540660
+    },
+    {
+     "delivered": 33,
+     "expected": 33,
+     "has_block": true,
+     "matched": 33,
+     "slot": 450540661
+    },
+    {
+     "delivered": 26,
+     "expected": 26,
+     "has_block": true,
+     "matched": 26,
+     "slot": 450540662
+    },
+    {
+     "delivered": 32,
+     "expected": 32,
+     "has_block": true,
+     "matched": 32,
+     "slot": 450540663
+    },
+    {
+     "delivered": 35,
+     "expected": 35,
+     "has_block": true,
+     "matched": 35,
+     "slot": 450540664
+    },
+    {
+     "delivered": 40,
+     "expected": 40,
+     "has_block": true,
+     "matched": 40,
+     "slot": 450540665
+    },
+    {
+     "delivered": 18,
+     "expected": 18,
+     "has_block": true,
+     "matched": 18,
+     "slot": 450540666
+    },
+    {
+     "delivered": 81,
+     "expected": 81,
+     "has_block": true,
+     "matched": 81,
+     "slot": 450540667
+    },
+    {
+     "delivered": 59,
+     "expected": 59,
+     "has_block": true,
+     "matched": 59,
+     "slot": 450540668
+    },
+    {
+     "delivered": 87,
+     "expected": 87,
+     "has_block": true,
+     "matched": 87,
+     "slot": 450540669
+    },
+    {
+     "delivered": 137,
+     "expected": 137,
+     "has_block": true,
+     "matched": 137,
+     "slot": 450540670
+    },
+    {
+     "delivered": 117,
+     "expected": 117,
+     "has_block": true,
+     "matched": 117,
+     "slot": 450540671
+    },
+    {
+     "delivered": 51,
+     "expected": 51,
+     "has_block": true,
+     "matched": 51,
+     "slot": 450540672
+    },
+    {
+     "delivered": 86,
+     "expected": 86,
+     "has_block": true,
+     "matched": 86,
+     "slot": 450540673
+    },
+    {
+     "delivered": 39,
+     "expected": 39,
+     "has_block": true,
+     "matched": 39,
+     "slot": 450540674
+    },
+    {
+     "delivered": 92,
+     "expected": 92,
+     "has_block": true,
+     "matched": 92,
+     "slot": 450540675
+    },
+    {
+     "delivered": 185,
+     "expected": 185,
+     "has_block": true,
+     "matched": 185,
+     "slot": 450540676
+    },
+    {
+     "delivered": 43,
+     "expected": 43,
+     "has_block": true,
+     "matched": 43,
+     "slot": 450540677
+    },
+    {
+     "delivered": 18,
+     "expected": 18,
+     "has_block": true,
+     "matched": 18,
+     "slot": 450540678
+    },
+    {
+     "delivered": 139,
+     "expected": 139,
+     "has_block": true,
+     "matched": 139,
+     "slot": 450540679
+    },
+    {
+     "delivered": 118,
+     "expected": 118,
+     "has_block": true,
+     "matched": 118,
+     "slot": 450540680
+    },
+    {
+     "delivered": 148,
+     "expected": 148,
+     "has_block": true,
+     "matched": 148,
+     "slot": 450540681
+    },
+    {
+     "delivered": 115,
+     "expected": 115,
+     "has_block": true,
+     "matched": 115,
+     "slot": 450540682
+    },
+    {
+     "delivered": 127,
+     "expected": 127,
+     "has_block": true,
+     "matched": 127,
+     "slot": 450540683
+    },
+    {
+     "delivered": 144,
+     "expected": 144,
+     "has_block": true,
+     "matched": 144,
+     "slot": 450540684
+    },
+    {
+     "delivered": 95,
+     "expected": 95,
+     "has_block": true,
+     "matched": 95,
+     "slot": 450540685
+    },
+    {
+     "delivered": 45,
+     "expected": 45,
+     "has_block": true,
+     "matched": 45,
+     "slot": 450540686
+    },
+    {
+     "delivered": 78,
+     "expected": 78,
+     "has_block": true,
+     "matched": 78,
+     "slot": 450540687
+    },
+    {
+     "delivered": 34,
+     "expected": 34,
+     "has_block": true,
+     "matched": 34,
+     "slot": 450540688
+    },
+    {
+     "delivered": 60,
+     "expected": 60,
+     "has_block": true,
+     "matched": 60,
+     "slot": 450540689
+    },
+    {
+     "delivered": 73,
+     "expected": 73,
+     "has_block": true,
+     "matched": 73,
+     "slot": 450540690
+    },
+    {
+     "delivered": 108,
+     "expected": 108,
+     "has_block": true,
+     "matched": 108,
+     "slot": 450540691
+    },
+    {
+     "delivered": 45,
+     "expected": 45,
+     "has_block": true,
+     "matched": 45,
+     "slot": 450540692
+    },
+    {
+     "delivered": 42,
+     "expected": 42,
+     "has_block": true,
+     "matched": 42,
+     "slot": 450540693
+    },
+    {
+     "delivered": 31,
+     "expected": 31,
+     "has_block": true,
+     "matched": 31,
+     "slot": 450540694
+    },
+    {
+     "delivered": 53,
+     "expected": 53,
+     "has_block": true,
+     "matched": 53,
+     "slot": 450540695
+    },
+    {
+     "delivered": 34,
+     "expected": 34,
+     "has_block": true,
+     "matched": 34,
+     "slot": 450540696
+    },
+    {
+     "delivered": 51,
+     "expected": 51,
+     "has_block": true,
+     "matched": 51,
+     "slot": 450540697
+    },
+    {
+     "delivered": 72,
+     "expected": 72,
+     "has_block": true,
+     "matched": 72,
+     "slot": 450540698
+    },
+    {
+     "delivered": 34,
+     "expected": 34,
+     "has_block": true,
+     "matched": 34,
+     "slot": 450540699
+    },
+    {
+     "delivered": 70,
+     "expected": 70,
+     "has_block": true,
+     "matched": 70,
+     "slot": 450540700
+    },
+    {
+     "delivered": 28,
+     "expected": 28,
+     "has_block": true,
+     "matched": 28,
+     "slot": 450540701
+    },
+    {
+     "delivered": 42,
+     "expected": 42,
+     "has_block": true,
+     "matched": 42,
+     "slot": 450540702
+    },
+    {
+     "delivered": 43,
+     "expected": 43,
+     "has_block": true,
+     "matched": 43,
+     "slot": 450540703
+    },
+    {
+     "delivered": 49,
+     "expected": 49,
+     "has_block": true,
+     "matched": 49,
+     "slot": 450540704
+    },
+    {
+     "delivered": 59,
+     "expected": 59,
+     "has_block": true,
+     "matched": 59,
+     "slot": 450540705
+    },
+    {
+     "delivered": 41,
+     "expected": 41,
+     "has_block": true,
+     "matched": 41,
+     "slot": 450540706
+    },
+    {
+     "delivered": 103,
+     "expected": 103,
+     "has_block": true,
+     "matched": 103,
+     "slot": 450540707
+    },
+    {
+     "delivered": 84,
+     "expected": 84,
+     "has_block": true,
+     "matched": 84,
+     "slot": 450540708
+    },
+    {
+     "delivered": 78,
+     "expected": 78,
+     "has_block": true,
+     "matched": 78,
+     "slot": 450540709
+    },
+    {
+     "delivered": 64,
+     "expected": 64,
+     "has_block": true,
+     "matched": 64,
+     "slot": 450540710
+    },
+    {
+     "delivered": 76,
+     "expected": 76,
+     "has_block": true,
+     "matched": 76,
+     "slot": 450540711
+    },
+    {
+     "delivered": 76,
+     "expected": 76,
+     "has_block": true,
+     "matched": 76,
+     "slot": 450540712
+    },
+    {
+     "delivered": 63,
+     "expected": 63,
+     "has_block": true,
+     "matched": 63,
+     "slot": 450540713
+    },
+    {
+     "delivered": 53,
+     "expected": 53,
+     "has_block": true,
+     "matched": 53,
+     "slot": 450540714
+    },
+    {
+     "delivered": 77,
+     "expected": 77,
+     "has_block": true,
+     "matched": 77,
+     "slot": 450540715
+    },
+    {
+     "delivered": 35,
+     "expected": 35,
+     "has_block": true,
+     "matched": 35,
+     "slot": 450540716
+    },
+    {
+     "delivered": 39,
+     "expected": 39,
+     "has_block": true,
+     "matched": 39,
+     "slot": 450540717
+    },
+    {
+     "delivered": 34,
+     "expected": 34,
+     "has_block": true,
+     "matched": 34,
+     "slot": 450540718
+    },
+    {
+     "delivered": 35,
+     "expected": 35,
+     "has_block": true,
+     "matched": 35,
+     "slot": 450540719
+    },
+    {
+     "delivered": 30,
+     "expected": 30,
+     "has_block": true,
+     "matched": 30,
+     "slot": 450540720
+    },
+    {
+     "delivered": 35,
+     "expected": 35,
+     "has_block": true,
+     "matched": 35,
+     "slot": 450540721
+    },
+    {
+     "delivered": 42,
+     "expected": 42,
+     "has_block": true,
+     "matched": 42,
+     "slot": 450540722
+    },
+    {
+     "delivered": 45,
+     "expected": 45,
+     "has_block": true,
+     "matched": 45,
+     "slot": 450540723
+    },
+    {
+     "delivered": 62,
+     "expected": 62,
+     "has_block": true,
+     "matched": 62,
+     "slot": 450540724
+    },
+    {
+     "delivered": 55,
+     "expected": 55,
+     "has_block": true,
+     "matched": 55,
+     "slot": 450540725
+    },
+    {
+     "delivered": 34,
+     "expected": 34,
+     "has_block": true,
+     "matched": 34,
+     "slot": 450540726
+    },
+    {
+     "delivered": 34,
+     "expected": 34,
+     "has_block": true,
+     "matched": 34,
+     "slot": 450540727
+    },
+    {
+     "delivered": 21,
+     "expected": 21,
+     "has_block": true,
+     "matched": 21,
+     "slot": 450540728
+    },
+    {
+     "delivered": 29,
+     "expected": 29,
+     "has_block": true,
+     "matched": 29,
+     "slot": 450540729
+    },
+    {
+     "delivered": 24,
+     "expected": 24,
+     "has_block": true,
+     "matched": 24,
+     "slot": 450540730
+    },
+    {
+     "delivered": 44,
+     "expected": 44,
+     "has_block": true,
+     "matched": 44,
+     "slot": 450540731
+    },
+    {
+     "delivered": 50,
+     "expected": 50,
+     "has_block": true,
+     "matched": 50,
+     "slot": 450540732
+    },
+    {
+     "delivered": 42,
+     "expected": 42,
+     "has_block": true,
+     "matched": 42,
+     "slot": 450540733
+    },
+    {
+     "delivered": 27,
+     "expected": 27,
+     "has_block": true,
+     "matched": 27,
+     "slot": 450540734
+    },
+    {
+     "delivered": 50,
+     "expected": 50,
+     "has_block": true,
+     "matched": 50,
+     "slot": 450540735
+    },
+    {
+     "delivered": 17,
+     "expected": 17,
+     "has_block": true,
+     "matched": 17,
+     "slot": 450540736
+    },
+    {
+     "delivered": 35,
+     "expected": 35,
+     "has_block": true,
+     "matched": 35,
+     "slot": 450540737
+    },
+    {
+     "delivered": 58,
+     "expected": 58,
+     "has_block": true,
+     "matched": 58,
+     "slot": 450540738
+    },
+    {
+     "delivered": 29,
+     "expected": 29,
+     "has_block": true,
+     "matched": 29,
+     "slot": 450540739
+    },
+    {
+     "delivered": 38,
+     "expected": 38,
+     "has_block": true,
+     "matched": 38,
+     "slot": 450540740
+    },
+    {
+     "delivered": 55,
+     "expected": 55,
+     "has_block": true,
+     "matched": 55,
+     "slot": 450540741
+    },
+    {
+     "delivered": 34,
+     "expected": 34,
+     "has_block": true,
+     "matched": 34,
+     "slot": 450540742
+    },
+    {
+     "delivered": 43,
+     "expected": 43,
+     "has_block": true,
+     "matched": 43,
+     "slot": 450540743
+    },
+    {
+     "delivered": 62,
+     "expected": 62,
+     "has_block": true,
+     "matched": 62,
+     "slot": 450540744
+    },
+    {
+     "delivered": 39,
+     "expected": 39,
+     "has_block": true,
+     "matched": 39,
+     "slot": 450540745
+    },
+    {
+     "delivered": 34,
+     "expected": 34,
+     "has_block": true,
+     "matched": 34,
+     "slot": 450540746
+    },
+    {
+     "delivered": 38,
+     "expected": 38,
+     "has_block": true,
+     "matched": 38,
+     "slot": 450540747
+    },
+    {
+     "delivered": 33,
+     "expected": 33,
+     "has_block": true,
+     "matched": 33,
+     "slot": 450540748
+    },
+    {
+     "delivered": 28,
+     "expected": 28,
+     "has_block": true,
+     "matched": 28,
+     "slot": 450540749
+    },
+    {
+     "delivered": 23,
+     "expected": 23,
+     "has_block": true,
+     "matched": 23,
+     "slot": 450540750
+    },
+    {
+     "delivered": 40,
+     "expected": 40,
+     "has_block": true,
+     "matched": 40,
+     "slot": 450540751
+    },
+    {
+     "delivered": 5,
+     "expected": 5,
+     "has_block": true,
+     "matched": 5,
+     "slot": 450540752
+    },
+    {
+     "delivered": 18,
+     "expected": 18,
+     "has_block": true,
+     "matched": 18,
+     "slot": 450540753
+    },
+    {
+     "delivered": 28,
+     "expected": 28,
+     "has_block": true,
+     "matched": 28,
+     "slot": 450540754
+    },
+    {
+     "delivered": 40,
+     "expected": 40,
+     "has_block": true,
+     "matched": 40,
+     "slot": 450540755
+    },
+    {
+     "delivered": 24,
+     "expected": 24,
+     "has_block": true,
+     "matched": 24,
+     "slot": 450540756
+    },
+    {
+     "delivered": 22,
+     "expected": 22,
+     "has_block": true,
+     "matched": 22,
+     "slot": 450540757
+    },
+    {
+     "delivered": 71,
+     "expected": 71,
+     "has_block": true,
+     "matched": 71,
+     "slot": 450540758
+    }
+   ],
+   "range": {
+    "first": 450540475,
+    "last": 450540758
+   },
+   "repaired": [],
+   "rpc": {
+    "bytes": 21198896,
+    "calls": 43,
+    "retries": 0
+   },
+   "skipped_slots": 0,
+   "slots_with_blocks": 284,
+   "source": "getTransactionsForAddress",
+   "spot_checks": [
+    {
+     "agree": true,
+     "from_block": 45,
+     "from_history": 45,
+     "has_block": true,
+     "only_in_block": [],
+     "only_in_history": [],
+     "slot": 450540475,
+     "via_lookup_table": 7
+    },
+    {
+     "agree": true,
+     "from_block": 16,
+     "from_history": 16,
+     "has_block": true,
+     "only_in_block": [],
+     "only_in_history": [],
+     "slot": 450540616,
+     "via_lookup_table": 4
+    },
+    {
+     "agree": true,
+     "from_block": 71,
+     "from_history": 71,
+     "has_block": true,
+     "only_in_block": [],
+     "only_in_history": [],
+     "slot": 450540758,
+     "via_lookup_table": 3
+    }
+   ],
+   "unexplained": [],
+   "verdict": {
+    "kind": "complete"
+   }
+  },
+  "status": "done"
+ }
+}

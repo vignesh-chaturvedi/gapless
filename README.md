@@ -62,6 +62,27 @@ cargo run -p gapless-verify --release -- sources --slots 20
 
 Verification found that Solami drops the start of the slot where a resumed stream switches from replay to live. Gapless now re-reads those slots on a short second stream (the "handoff patch") and delivers what was dropped. The before and after reports are in [`docs/evidence/`](docs/evidence/).
 
+## The server (`gapless-server`)
+
+`crates/gapless-server` runs Gapless and serves the console:
+
+- **Live feed:** a WebSocket slot tape, sampled transactions and an activity log.
+- **Pump.fun indexer:** trades, buy/sell volume, launches and graduations, decoded from Pump.fun's Anchor events.
+- **Solami stream telemetry:** buffer and throughput, from the account API.
+- **Rolling verification** of everything delivered.
+- **Chaos endpoints:** kill through Solami's API, client cut, slow consumer, handoff patch on/off.
+- **Incident history:** every outage is replayed, patched, verified automatically and stored in SQLite.
+
+```bash
+cargo run -p gapless-server --release                                             # live on :8790 (needs SOLAMI_API_KEY)
+cargo run -p gapless-server --release -- --offline fixtures/pumpfun-150s.bin.zst   # no key: plays recorded mainnet
+
+curl -X POST localhost:8790/api/chaos/kill -H 'content-type: application/json' -d '{"holdSecs":60}'
+curl localhost:8790/api/incidents?limit=1
+```
+
+The API and WebSocket contract is in [`docs/api.md`](docs/api.md). `fixtures/pumpfun-150s.bin.zst` holds 150 s of real Pump.fun traffic (3.6 MB). Offline mode loops it seamlessly, with `from_slot` replay, and uses it as verification ground truth.
+
 ## Phase 0 probe
 
 ```bash
@@ -69,7 +90,7 @@ cp .env.example .env   # then paste your key into SOLAMI_API_KEY
 cargo run -p gapless-probe -- stream --secs 30
 ```
 
-Subcommands: `stream`, `replay`, `connections`, `kill`, `blocks`, `record`, `inspect`. Run with `--help` for options.
+Subcommands: `stream`, `replay`, `connections`, `kill`, `blocks`, `record`, `inspect`, `analyze`, `events`, `trim`, `unary`. Run with `--help` for options.
 
 If `cargo` resolves to a Homebrew install, put rustup's toolchain first (`export PATH="$HOME/.cargo/bin:$PATH"`) so `rust-toolchain.toml` applies.
 

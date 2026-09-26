@@ -104,6 +104,7 @@ enum Command {
     Cut,
     Throttle(Option<Duration>),
     Hold(Option<Duration>),
+    HandoffPatch(bool),
     Stop,
 }
 
@@ -130,6 +131,11 @@ impl Control {
     /// reconnecting as soon as backoff allows.
     pub fn hold(&self, offline_for: Option<Duration>) {
         let _ = self.tx.send(Command::Hold(offline_for));
+    }
+
+    /// Turn the replay-to-live handoff patch on or off for recoveries from now on.
+    pub fn handoff_patch(&self, on: bool) {
+        let _ = self.tx.send(Command::HandoffPatch(on));
     }
 
     /// Stop. The event stream ends with [`State::Stopped`].
@@ -465,6 +471,7 @@ impl Supervisor {
                     }
                     Some(Command::Throttle(per_update)) => self.throttle = per_update,
                     Some(Command::Hold(offline_for)) => self.hold = offline_for,
+                    Some(Command::HandoffPatch(on)) => self.config.handoff_patch = on,
                     Some(Command::Stop) => return Ended::Stop,
                     None => self.control_open = false,
                 },
@@ -879,6 +886,7 @@ impl Supervisor {
                     Some(Command::Stop) => return false,
                     Some(Command::Throttle(per_update)) => self.throttle = per_update,
                     Some(Command::Hold(offline_for)) => self.hold = offline_for,
+                    Some(Command::HandoffPatch(on)) => self.config.handoff_patch = on,
                     Some(Command::Cut) => {}
                     None => self.control_open = false,
                 },

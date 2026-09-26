@@ -7,6 +7,7 @@ use serde_json::json;
 use crate::rpc::RpcStats;
 
 #[derive(Clone, Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct TxRef {
     pub signature: String,
     pub slot: u64,
@@ -14,6 +15,7 @@ pub struct TxRef {
 
 /// An expected transaction the stream never delivered.
 #[derive(Clone, Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct MissingTx {
     pub signature: String,
     pub slot: u64,
@@ -26,6 +28,7 @@ pub struct MissingTx {
 
 /// A missing transaction fetched from RPC after the fact.
 #[derive(Clone, Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct Repaired {
     pub signature: String,
     pub slot: u64,
@@ -37,6 +40,7 @@ pub struct Repaired {
 }
 
 #[derive(Clone, Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct Moved {
     pub signature: String,
     pub delivered_slot: u64,
@@ -45,6 +49,7 @@ pub struct Moved {
 
 /// `getBlock` versus `getTransactionsForAddress` for one slot: two independent expected sets.
 #[derive(Clone, Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct SpotCheck {
     pub slot: u64,
     pub has_block: bool,
@@ -58,6 +63,7 @@ pub struct SpotCheck {
 }
 
 #[derive(Clone, Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct SlotRow {
     pub slot: u64,
     pub has_block: bool,
@@ -85,6 +91,7 @@ pub enum Verdict {
 }
 
 #[derive(Clone, Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct Report {
     pub range: SlotRange,
     pub finalized_tip: u64,

@@ -28,6 +28,7 @@ mod config;
 mod cursor;
 mod dedup;
 mod event;
+pub mod fixture;
 mod source;
 mod supervisor;
 

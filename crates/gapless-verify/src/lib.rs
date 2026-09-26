@@ -70,6 +70,113 @@ impl Default for Options {
     }
 }
 
+/// The expected side of a verification: which transactions should have arrived, and which
+/// slots have blocks.
+pub struct GroundTruth<'a> {
+    pub source: &'static str,
+    pub addresses: &'a [String],
+    pub finalized_tip: u64,
+    pub blocks: &'a [u64],
+    pub expected: &'a HashMap<Signature, Landed>,
+}
+
+/// Compare `delivered` (every signature the stream delivered, with its slot) against `truth`
+/// for `range`, and assemble the report. [`Verifier::verify`] uses this with RPC data; offline
+/// mode uses it with a fixture.
+#[allow(clippy::too_many_arguments)]
+pub fn build_report(
+    range: SlotRange,
+    truth: GroundTruth<'_>,
+    delivered: &HashMap<Signature, u64>,
+    spot_checks: Vec<SpotCheck>,
+    positions: &HashMap<Signature, u64>,
+    rpc: RpcStats,
+    elapsed_ms: u64,
+) -> Report {
+    let canonical: HashSet<u64> = truth.blocks.iter().copied().collect();
+    let d = diff::diff(range, truth.expected, &canonical, delivered);
+    let verdict = if !d.missing.is_empty() {
+        Verdict::Incomplete {
+            missing: d.missing.len() as u64,
+        }
+    } else if !d.unexplained.is_empty() {
+        Verdict::Inconclusive {
+            reason: format!(
+                "{} delivered transactions aren't in the expected set",
+                d.unexplained.len()
+            ),
+        }
+    } else if let Some(bad) = spot_checks.iter().find(|c| !c.agree) {
+        Verdict::Inconclusive {
+            reason: format!(
+                "getBlock and getTransactionsForAddress disagree on slot {}",
+                bad.slot
+            ),
+        }
+    } else {
+        Verdict::Complete
+    };
+
+    let per_slot = (range.first..=range.last)
+        .map(|slot| {
+            let count = d.per_slot.get(&slot).copied().unwrap_or_default();
+            SlotRow {
+                slot,
+                has_block: canonical.contains(&slot),
+                expected: count.expected,
+                delivered: count.delivered,
+                matched: count.matched,
+            }
+        })
+        .collect();
+    let tx = |(s, slot): &(Signature, u64)| TxRef {
+        signature: s.to_string(),
+        slot: *slot,
+    };
+    Report {
+        range,
+        finalized_tip: truth.finalized_tip,
+        source: truth.source,
+        addresses: truth.addresses.to_vec(),
+        slots_with_blocks: truth.blocks.len() as u64,
+        skipped_slots: range.len() - truth.blocks.len() as u64,
+        expected: truth.expected.len() as u64,
+        delivered: delivered
+            .values()
+            .filter(|slot| range.contains(**slot))
+            .count() as u64,
+        matched: d.matched,
+        missing: d
+            .missing
+            .iter()
+            .map(|(s, l)| MissingTx {
+                signature: s.to_string(),
+                slot: l.slot,
+                position: positions.get(s).copied(),
+                cause: None,
+                incident: None,
+            })
+            .collect(),
+        repaired: Vec::new(),
+        orphaned: d.orphaned.iter().map(tx).collect(),
+        landed_elsewhere: d
+            .landed_elsewhere
+            .iter()
+            .map(|(s, delivered_slot, l)| Moved {
+                signature: s.to_string(),
+                delivered_slot: *delivered_slot,
+                landed_slot: l.slot,
+            })
+            .collect(),
+        unexplained: d.unexplained.iter().map(tx).collect(),
+        spot_checks,
+        verdict,
+        per_slot,
+        rpc,
+        elapsed_ms,
+    }
+}
+
 pub struct Verifier {
     rpc: Rpc,
     addresses: Vec<String>,
@@ -174,86 +281,21 @@ impl Verifier {
             .collect();
         let spot_checks: Vec<SpotCheck> = checked.into_iter().map(|(check, _)| check).collect();
 
-        let verdict = if !d.missing.is_empty() {
-            Verdict::Incomplete {
-                missing: d.missing.len() as u64,
-            }
-        } else if !d.unexplained.is_empty() {
-            Verdict::Inconclusive {
-                reason: format!(
-                    "{} delivered transactions aren't in the expected set",
-                    d.unexplained.len()
-                ),
-            }
-        } else if let Some(bad) = spot_checks.iter().find(|c| !c.agree) {
-            Verdict::Inconclusive {
-                reason: format!(
-                    "getBlock and getTransactionsForAddress disagree on slot {}",
-                    bad.slot
-                ),
-            }
-        } else {
-            Verdict::Complete
-        };
-
-        let per_slot = (range.first..=range.last)
-            .map(|slot| {
-                let count = d.per_slot.get(&slot).copied().unwrap_or_default();
-                SlotRow {
-                    slot,
-                    has_block: canonical.contains(&slot),
-                    expected: count.expected,
-                    delivered: count.delivered,
-                    matched: count.matched,
-                }
-            })
-            .collect();
-        let tx = |(s, slot): &(Signature, u64)| TxRef {
-            signature: s.to_string(),
-            slot: *slot,
-        };
-        Ok(Report {
+        Ok(build_report(
             range,
-            finalized_tip,
-            source: "getTransactionsForAddress",
-            addresses: self.addresses.clone(),
-            slots_with_blocks: blocks.len() as u64,
-            skipped_slots: range.len() - blocks.len() as u64,
-            expected: expected.len() as u64,
-            delivered: delivered
-                .values()
-                .filter(|slot| range.contains(**slot))
-                .count() as u64,
-            matched: d.matched,
-            missing: d
-                .missing
-                .iter()
-                .map(|(s, l)| MissingTx {
-                    signature: s.to_string(),
-                    slot: l.slot,
-                    position: positions.get(s).copied(),
-                    cause: None,
-                    incident: None,
-                })
-                .collect(),
-            repaired: Vec::new(),
-            orphaned: d.orphaned.iter().map(tx).collect(),
-            landed_elsewhere: d
-                .landed_elsewhere
-                .iter()
-                .map(|(s, delivered_slot, l)| Moved {
-                    signature: s.to_string(),
-                    delivered_slot: *delivered_slot,
-                    landed_slot: l.slot,
-                })
-                .collect(),
-            unexplained: d.unexplained.iter().map(tx).collect(),
+            GroundTruth {
+                source: "getTransactionsForAddress",
+                addresses: &self.addresses,
+                finalized_tip,
+                blocks: &blocks,
+                expected: &expected,
+            },
+            delivered,
             spot_checks,
-            verdict,
-            per_slot,
-            rpc: self.rpc.stats().since(usage_before),
-            elapsed_ms: started.elapsed().as_millis() as u64,
-        })
+            &positions,
+            self.rpc.stats().since(usage_before),
+            started.elapsed().as_millis() as u64,
+        ))
     }
 
     /// Check the expected-set source itself: full blocks versus `getTransactionsForAddress`

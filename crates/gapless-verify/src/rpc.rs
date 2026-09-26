@@ -25,6 +25,7 @@ struct Counters {
 
 /// RPC usage, for reports.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct RpcStats {
     pub calls: u64,
     pub bytes: u64,
