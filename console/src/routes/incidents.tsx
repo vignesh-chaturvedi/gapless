@@ -109,6 +109,11 @@ export function Incidents() {
                     </td>
                     <td className="num px-4 py-3 text-right">
                       {incident.gap ? `${fmt.int(incident.gap.last - incident.gap.first + 1)} slots` : fmt.NONE}
+                      {incident.unrecoverable && (
+                        <span className="block text-xs text-gap">
+                          {fmt.int(incident.unrecoverable.last - incident.unrecoverable.first + 1)} lost
+                        </span>
+                      )}
                     </td>
                     <td className="num px-4 py-3 text-right">{fmt.int(incident.replayed)}</td>
                     <td className="num px-4 py-3 text-right">{fmt.int(incident.duplicates)}</td>

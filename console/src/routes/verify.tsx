@@ -25,6 +25,7 @@ export function Verify() {
   const verified = incidents.filter((i) => i.verification?.report);
   const matched = verified.reduce((sum, i) => sum + (i.verification?.report?.matched ?? 0), 0);
   const expected = verified.reduce((sum, i) => sum + (i.verification?.report?.expected ?? 0), 0);
+  const lost = incidents.reduce((sum, i) => sum + (i.unrecoverable ? i.unrecoverable.last - i.unrecoverable.first + 1 : 0), 0);
   const behind =
     snapshot?.metrics.highestComplete && snapshot.verifiedThrough
       ? snapshot.metrics.highestComplete - snapshot.verifiedThrough
@@ -55,6 +56,7 @@ export function Verify() {
             label="Recovered transactions checked"
             value={expected ? `${fmt.int(matched)} / ${fmt.int(expected)}` : fmt.NONE}
             tone={expected && matched === expected ? "verified" : "default"}
+            hint={lost ? `${fmt.plural(lost, "slot")} lost past the horizon` : undefined}
           />
         </div>
       </section>

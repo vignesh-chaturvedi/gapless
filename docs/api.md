@@ -7,13 +7,13 @@ cargo run -p gapless-server --release                                           
 cargo run -p gapless-server --release -- --offline fixtures/pumpfun-150s.bin.zst  # no key needed
 ```
 
-In **offline** mode the server plays a recorded mainnet fixture in a loop. It supports the same `from_slot` replay, and the fixture serves as ground truth for verification. The kill endpoint falls back to a client-side cut there.
+In **offline** mode the server plays a recorded mainnet fixture in a loop. It supports the same `from_slot` replay, and the fixture serves as ground truth for verification and repair. The kill endpoint falls back to a client-side cut there. The fixture also emulates Solami's 8,192-message send buffer (and its backpressure close) and its handoff loss. `--horizon <slots>` shortens the replay horizon from 3,000.
 
 ## REST
 
 | Method | Path | Returns |
 |---|---|---|
-| GET | `/api/health` | `{ ok, mode }` |
+| GET | `/api/health` | `{ ok, mode, sizes }`; `sizes` counts the engine's in-memory state (`delivered`, `dedup`, `ledger`, `trackedIncidents`, `symbols`, `covered`) for soak runs |
 | GET | `/api/state` | [`Snapshot`](#snapshot) |
 | GET | `/api/tape` | the last 600 [`SlotCell`](#slotcell)s |
 | GET | `/api/incidents?limit=50` | [`Incident`](#incident)s, newest first, persisted in SQLite (`--db`, default `gapless.db`) |
@@ -163,7 +163,7 @@ From the first disconnect through replay, handoff patch and verification. `statu
 }
 ```
 
-`reason.code` is one of `killed`, `backpressure`, `stream_limit`, `reconnect_limit`, `balance_exhausted`, `server_shutdown`, `backend_unavailable`, `backend_moved`, `session_expired`, `server_closed`, `stalled`, `cut`, `network`, `rejected`, or Solami's own termination reason. A bare end-of-stream is updated later from Solami's connection history.
+`reason.code` is one of `killed`, `backpressure`, `stream_limit`, `reconnect_limit`, `balance_exhausted`, `server_shutdown`, `backend_unavailable`, `backend_moved`, `session_expired`, `server_closed`, `stalled`, `cut`, `network`, `rejected`, `out_of_horizon` (a replay start that had already left the window; the next step starts further in), or Solami's own termination reason. A fatal `rejected` or `balance_exhausted` stops the stream without opening an incident. A bare end-of-stream is updated later from Solami's connection history.
 
 ### VerificationReport
 

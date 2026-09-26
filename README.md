@@ -17,6 +17,7 @@ Gapless runs on [Solami](https://solami.dev)'s Yellowstone gRPC. When the connec
 
 - **Resume point:** it tracks slot completeness (a slot is complete once its `SlotProcessed` arrives) and resumes from the lowest incomplete slot with `from_slot`.
 - **Deep replays:** when Solami closes a replay for backpressure, it keeps resuming from its cursor until it's live again.
+- **The horizon edge:** when the gap is older than Solami's 3,000-slot replay window, it resumes a margin inside the window, because the window keeps sliding while the subscription is on its way. It reports the lost slots with their exact range.
 - **Duplicates:** it drops re-sent transactions by signature, and reports each one (`Event::Duplicate`).
 - **Disconnect reasons:** it takes them from the gRPC status, or from Solami's connection history when the stream just ends.
 - **Hidden closes:** it watches Solami's live-connection list. When a slow consumer gets its stream closed for backpressure, the close can sit behind minutes of updates still buffered on the client. Gapless ends the stream as soon as Solami stops listing it, instead of draining the backlog first.
@@ -82,7 +83,30 @@ curl -X POST localhost:8790/api/chaos/kill -H 'content-type: application/json' -
 curl localhost:8790/api/incidents?limit=1
 ```
 
-The API and WebSocket contract is in [`docs/api.md`](docs/api.md). `fixtures/pumpfun-150s.bin.zst` holds 150 s of real Pump.fun traffic (3.6 MB). Offline mode loops it seamlessly, with `from_slot` replay, and uses it as verification ground truth. It also emulates Solami's 8,192-message send buffer, so the slow-consumer scenario ends in a backpressure close offline too.
+The API and WebSocket contract is in [`docs/api.md`](docs/api.md). `fixtures/pumpfun-150s.bin.zst` holds 150 s of real Pump.fun traffic (3.6 MB). Offline mode loops it seamlessly, with `from_slot` replay, and uses it as verification ground truth. It also reproduces the Solami behaviours Gapless exists for:
+
+- **Send buffer:** an 8,192-message buffer that closes a slow reader for backpressure.
+- **Handoff loss:** the resumed stream loses part of the slot where it switches back to live, 7 slots past the resume tip, which is what Phase 2 measured on mainnet.
+- **Replay horizon:** `--horizon <slots>` shortens it from 3,000, so an outage beyond it takes a minute to try instead of 13.
+
+## Chaos scenarios
+
+Each scenario is one command against a running server. Each needs `curl` and `jq`, drives the chaos API, waits for the incident to be verified, and prints PASS or FAIL.
+
+| Script | What it does | Passes when |
+|---|---|---|
+| `scripts/scenario-a.sh` | Kills our stream through Solami's account API and stays offline 30 s | the replayed window verifies complete |
+| `scripts/scenario-b.sh` | Slows the consumer until Solami's buffer fills and it drops the stream | the drop is classified as backpressure and the window verifies complete |
+| `scripts/scenario-c.sh` | The twist: the same outage with the handoff patch off, then on | with it off, verification catches what Solami dropped at the handoff (and fetches it from RPC); with it on, the window verifies complete |
+| `scripts/scenario-d.sh` | Stays offline past the 3,000-slot replay horizon (15 min) | the lost slots are reported with their exact range, and the recovered part verifies complete |
+
+```bash
+scripts/scenarios.sh                  # A–D, twice
+HOLD=60 scripts/scenario-a.sh         # a longer outage
+MINUTES=120 scripts/soak.sh soak.csv  # memory, counters and state sizes once a minute
+```
+
+Offline, run D against `gapless-server --offline fixtures/pumpfun-150s.bin.zst --horizon 200` with `HOLD=90`.
 
 ## The console
 

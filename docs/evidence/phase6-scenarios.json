@@ -1,0 +1,472 @@
+{
+ "run": "2026-09-26, live mainnet (Pump.fun), scripts/scenarios.sh with ROUNDS=2; all four scenarios passed twice in a row",
+ "handoffsWithLoss": "7 of 12",
+ "incidents": [
+  {
+   "incident": 1,
+   "scenario": "A (round 1)",
+   "cause": "killed through Solami's account API",
+   "chaos": "killed through Solami's account API, then offline for 30s",
+   "gapSlots": 116,
+   "gap": {
+    "first": 450653371,
+    "last": 450653486
+   },
+   "lostSlots": null,
+   "lost": null,
+   "replaySteps": 1,
+   "stepEndings": [
+    null
+   ],
+   "replayed": 1256,
+   "duplicatesDropped": 7,
+   "patchRecovered": 0,
+   "recoveredInMs": 35551,
+   "verified": {
+    "range": {
+     "first": 450653371,
+     "last": 450653550
+    },
+    "verdict": "complete",
+    "matched": 1904,
+    "expected": 1904,
+    "missing": 0,
+    "missingCauses": {},
+    "fetchedFromRpc": 0,
+    "spotChecksAgree": "3/3",
+    "rpcCalls": 29,
+    "elapsedMs": 3728
+   },
+   "droppedAtHandoff": 0
+  },
+  {
+   "incident": 2,
+   "scenario": "B (round 1)",
+   "cause": "Solami closed the stream for backpressure",
+   "chaos": "slow consumer",
+   "gapSlots": 847,
+   "gap": {
+    "first": 450653672,
+    "last": 450654518
+   },
+   "lostSlots": null,
+   "lost": null,
+   "replaySteps": 2,
+   "stepEndings": [
+    "backpressure",
+    null
+   ],
+   "replayed": 11311,
+   "duplicatesDropped": 2,
+   "patchRecovered": 24,
+   "recoveredInMs": 16374,
+   "verified": {
+    "range": {
+     "first": 450653672,
+     "last": 450654617
+    },
+    "verdict": "complete",
+    "matched": 12832,
+    "expected": 12832,
+    "missing": 0,
+    "missingCauses": {},
+    "fetchedFromRpc": 0,
+    "spotChecksAgree": "3/3",
+    "rpcCalls": 125,
+    "elapsedMs": 15824
+   },
+   "droppedAtHandoff": 24
+  },
+  {
+   "incident": 3,
+   "scenario": "C, patch off (round 1)",
+   "cause": "killed through Solami's account API",
+   "chaos": "killed through Solami's account API, then offline for 30s",
+   "gapSlots": 109,
+   "gap": {
+    "first": 450654723,
+    "last": 450654831
+   },
+   "lostSlots": null,
+   "lost": null,
+   "replaySteps": 1,
+   "stepEndings": [
+    null
+   ],
+   "replayed": 1436,
+   "duplicatesDropped": 8,
+   "patchRecovered": null,
+   "recoveredInMs": 36790,
+   "verified": {
+    "range": {
+     "first": 450654723,
+     "last": 450654895
+    },
+    "verdict": "repaired",
+    "matched": 2386,
+    "expected": 2389,
+    "missing": 3,
+    "missingCauses": {
+     "replay_handoff": 3
+    },
+    "fetchedFromRpc": 3,
+    "spotChecksAgree": "4/4",
+    "rpcCalls": 28,
+    "elapsedMs": 6431
+   },
+   "droppedAtHandoff": 3
+  },
+  {
+   "incident": 4,
+   "scenario": "C, patch on (round 1)",
+   "cause": "killed through Solami's account API",
+   "chaos": "killed through Solami's account API, then offline for 30s",
+   "gapSlots": 114,
+   "gap": {
+    "first": 450654962,
+    "last": 450655075
+   },
+   "lostSlots": null,
+   "lost": null,
+   "replaySteps": 1,
+   "stepEndings": [
+    null
+   ],
+   "replayed": 1533,
+   "duplicatesDropped": 14,
+   "patchRecovered": 0,
+   "recoveredInMs": 37031,
+   "verified": {
+    "range": {
+     "first": 450654962,
+     "last": 450655139
+    },
+    "verdict": "complete",
+    "matched": 2465,
+    "expected": 2465,
+    "missing": 0,
+    "missingCauses": {},
+    "fetchedFromRpc": 0,
+    "spotChecksAgree": "3/3",
+    "rpcCalls": 29,
+    "elapsedMs": 7642
+   },
+   "droppedAtHandoff": 0
+  },
+  {
+   "incident": 5,
+   "scenario": "D (round 1)",
+   "cause": "killed through Solami's account API",
+   "chaos": "killed through Solami's account API, then offline for 900s",
+   "gapSlots": 3381,
+   "gap": {
+    "first": 450655202,
+    "last": 450658582
+   },
+   "lostSlots": 413,
+   "lost": {
+    "first": 450655202,
+    "last": 450655614
+   },
+   "replaySteps": 5,
+   "stepEndings": [
+    "backpressure",
+    "backpressure",
+    "backpressure",
+    "backpressure",
+    null
+   ],
+   "replayed": 43912,
+   "duplicatesDropped": 19,
+   "patchRecovered": 9,
+   "recoveredInMs": 949787,
+   "verified": {
+    "range": {
+     "first": 450655615,
+     "last": 450658803
+    },
+    "verdict": "complete",
+    "matched": 44658,
+    "expected": 44658,
+    "missing": 0,
+    "missingCauses": {},
+    "fetchedFromRpc": 0,
+    "spotChecksAgree": "3/3",
+    "rpcCalls": 405,
+    "elapsedMs": 20165
+   },
+   "droppedAtHandoff": 9
+  },
+  {
+   "incident": 6,
+   "scenario": "A (round 2)",
+   "cause": "killed through Solami's account API",
+   "chaos": "killed through Solami's account API, then offline for 30s",
+   "gapSlots": 114,
+   "gap": {
+    "first": 450658928,
+    "last": 450659041
+   },
+   "lostSlots": null,
+   "lost": null,
+   "replaySteps": 1,
+   "stepEndings": [
+    null
+   ],
+   "replayed": 1098,
+   "duplicatesDropped": 1,
+   "patchRecovered": 6,
+   "recoveredInMs": 35436,
+   "verified": {
+    "range": {
+     "first": 450658928,
+     "last": 450659105
+    },
+    "verdict": "complete",
+    "matched": 2023,
+    "expected": 2023,
+    "missing": 0,
+    "missingCauses": {},
+    "fetchedFromRpc": 0,
+    "spotChecksAgree": "3/3",
+    "rpcCalls": 29,
+    "elapsedMs": 3969
+   },
+   "droppedAtHandoff": 6
+  },
+  {
+   "incident": 7,
+   "scenario": "B (round 2)",
+   "cause": "Solami closed the stream for backpressure",
+   "chaos": "slow consumer",
+   "gapSlots": 799,
+   "gap": {
+    "first": 450659228,
+    "last": 450660026
+   },
+   "lostSlots": null,
+   "lost": null,
+   "replaySteps": 2,
+   "stepEndings": [
+    "backpressure",
+    null
+   ],
+   "replayed": 11497,
+   "duplicatesDropped": 11,
+   "patchRecovered": 0,
+   "recoveredInMs": 16710,
+   "verified": {
+    "range": {
+     "first": 450659228,
+     "last": 450660131
+    },
+    "verdict": "complete",
+    "matched": 12297,
+    "expected": 12297,
+    "missing": 0,
+    "missingCauses": {},
+    "fetchedFromRpc": 0,
+    "spotChecksAgree": "3/3",
+    "rpcCalls": 119,
+    "elapsedMs": 8851
+   },
+   "droppedAtHandoff": 0
+  },
+  {
+   "incident": 8,
+   "scenario": "C, patch off (round 2, attempt 1: inconclusive)",
+   "cause": "killed through Solami's account API",
+   "chaos": "killed through Solami's account API, then offline for 30s",
+   "gapSlots": 110,
+   "gap": {
+    "first": 450660206,
+    "last": 450660315
+   },
+   "lostSlots": null,
+   "lost": null,
+   "replaySteps": 1,
+   "stepEndings": [
+    null
+   ],
+   "replayed": 1260,
+   "duplicatesDropped": 4,
+   "patchRecovered": null,
+   "recoveredInMs": 33540,
+   "verified": {
+    "range": {
+     "first": 450660206,
+     "last": 450660379
+    },
+    "verdict": "complete",
+    "matched": 2055,
+    "expected": 2055,
+    "missing": 0,
+    "missingCauses": {},
+    "fetchedFromRpc": 0,
+    "spotChecksAgree": "3/3",
+    "rpcCalls": 27,
+    "elapsedMs": 4712
+   },
+   "droppedAtHandoff": 0
+  },
+  {
+   "incident": 9,
+   "scenario": "C, patch on (round 2, attempt 1)",
+   "cause": "killed through Solami's account API",
+   "chaos": "killed through Solami's account API, then offline for 30s",
+   "gapSlots": 111,
+   "gap": {
+    "first": 450660433,
+    "last": 450660543
+   },
+   "lostSlots": null,
+   "lost": null,
+   "replaySteps": 1,
+   "stepEndings": [
+    null
+   ],
+   "replayed": 1283,
+   "duplicatesDropped": 5,
+   "patchRecovered": 9,
+   "recoveredInMs": 37803,
+   "verified": {
+    "range": {
+     "first": 450660433,
+     "last": 450660607
+    },
+    "verdict": "complete",
+    "matched": 2112,
+    "expected": 2112,
+    "missing": 0,
+    "missingCauses": {},
+    "fetchedFromRpc": 0,
+    "spotChecksAgree": "3/3",
+    "rpcCalls": 27,
+    "elapsedMs": 4743
+   },
+   "droppedAtHandoff": 9
+  },
+  {
+   "incident": 10,
+   "scenario": "C, patch off (round 2, attempt 2)",
+   "cause": "killed through Solami's account API",
+   "chaos": "killed through Solami's account API, then offline for 30s",
+   "gapSlots": 111,
+   "gap": {
+    "first": 450660673,
+    "last": 450660783
+   },
+   "lostSlots": null,
+   "lost": null,
+   "replaySteps": 1,
+   "stepEndings": [
+    null
+   ],
+   "replayed": 1704,
+   "duplicatesDropped": 12,
+   "patchRecovered": null,
+   "recoveredInMs": 33801,
+   "verified": {
+    "range": {
+     "first": 450660673,
+     "last": 450660847
+    },
+    "verdict": "repaired",
+    "matched": 2718,
+    "expected": 2721,
+    "missing": 3,
+    "missingCauses": {
+     "replay_handoff": 3
+    },
+    "fetchedFromRpc": 3,
+    "spotChecksAgree": "4/4",
+    "rpcCalls": 28,
+    "elapsedMs": 5318
+   },
+   "droppedAtHandoff": 3
+  },
+  {
+   "incident": 11,
+   "scenario": "C, patch on (round 2, attempt 2)",
+   "cause": "killed through Solami's account API",
+   "chaos": "killed through Solami's account API, then offline for 30s",
+   "gapSlots": 111,
+   "gap": {
+    "first": 450660909,
+    "last": 450661019
+   },
+   "lostSlots": null,
+   "lost": null,
+   "replaySteps": 1,
+   "stepEndings": [
+    null
+   ],
+   "replayed": 1980,
+   "duplicatesDropped": 4,
+   "patchRecovered": 10,
+   "recoveredInMs": 49417,
+   "verified": {
+    "range": {
+     "first": 450660909,
+     "last": 450661083
+    },
+    "verdict": "complete",
+    "matched": 2854,
+    "expected": 2854,
+    "missing": 0,
+    "missingCauses": {},
+    "fetchedFromRpc": 0,
+    "spotChecksAgree": "3/3",
+    "rpcCalls": 27,
+    "elapsedMs": 3847
+   },
+   "droppedAtHandoff": 10
+  },
+  {
+   "incident": 12,
+   "scenario": "D (round 2)",
+   "cause": "killed through Solami's account API",
+   "chaos": "killed through Solami's account API, then offline for 900s",
+   "gapSlots": 3351,
+   "gap": {
+    "first": 450661142,
+    "last": 450664492
+   },
+   "lostSlots": 383,
+   "lost": {
+    "first": 450661142,
+    "last": 450661524
+   },
+   "replaySteps": 7,
+   "stepEndings": [
+    "backpressure",
+    "backpressure",
+    "backpressure",
+    "backpressure",
+    "backpressure",
+    "backpressure",
+    null
+   ],
+   "replayed": 51654,
+   "duplicatesDropped": 20,
+   "patchRecovered": 0,
+   "recoveredInMs": 977561,
+   "verified": {
+    "range": {
+     "first": 450661525,
+     "last": 450664824
+    },
+    "verdict": "complete",
+    "matched": 53524,
+    "expected": 53524,
+    "missing": 0,
+    "missingCauses": {},
+    "fetchedFromRpc": 0,
+    "spotChecksAgree": "3/3",
+    "rpcCalls": 419,
+    "elapsedMs": 18065
+   },
+   "droppedAtHandoff": 0
+  }
+ ]
+}

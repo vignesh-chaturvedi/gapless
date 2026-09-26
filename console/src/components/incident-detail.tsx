@@ -38,7 +38,7 @@ function Fact({ term, children }: { term: string; children: ReactNode }) {
   );
 }
 
-function Verdict({ report }: { report: VerificationReport }) {
+function Verdict({ report, lost }: { report: VerificationReport; lost: Incident["unrecoverable"] }) {
   const complete = report.verdict.kind === "complete";
   return (
     <div className={cn("rounded-md border px-4 py-3", complete ? "border-verified/40" : "border-gap/40")}>
@@ -57,6 +57,14 @@ function Verdict({ report }: { report: VerificationReport }) {
       <p className="mt-1 text-xs text-muted-foreground">
         expected transactions delivered, from <span className="num">{report.source}</span>
       </p>
+      {lost && (
+        <p className="mt-2 border-t border-hairline pt-2 text-xs text-pretty text-muted-foreground">
+          Covers the recovered slots only. The{" "}
+          <span className="num text-gap">{fmt.int(lost.last - lost.first + 1)}</span> slots before{" "}
+          <span className="num text-foreground">{fmt.slot(lost.last + 1)}</span> were past Solami's replay horizon: lost,
+          and reported as lost.
+        </p>
+      )}
     </div>
   );
 }
@@ -112,7 +120,7 @@ export function IncidentDetail({ incident, stacked = false }: { incident: Incide
 
   return (
     <div className={cn("grid gap-4", !stacked && "lg:grid-cols-[1fr_22rem]")}>
-      {stacked && report && <Verdict report={report} />}
+      {stacked && report && <Verdict report={report} lost={incident.unrecoverable} />}
       <Panel title="Timeline" bodyClassName="p-5">
         <ol className="relative before:absolute before:top-2 before:bottom-2 before:left-[4.5px] before:w-px before:bg-hairline">
           <Event tone="gap" title="Disconnected" at={incident.openedAt}>
@@ -148,6 +156,17 @@ export function IncidentDetail({ incident, stacked = false }: { incident: Incide
               .
             </Event>
           ))}
+          {incident.unrecoverable && (
+            <Event
+              tone="gap"
+              title={`Lost ${fmt.plural(incident.unrecoverable.last - incident.unrecoverable.first + 1, "slot")}`}
+            >
+              Slots <span className="num text-foreground">{fmt.slot(incident.unrecoverable.first)}</span>–
+              <span className="num text-foreground">{fmt.slot(incident.unrecoverable.last)}</span> had fallen out of
+              Solami's replay horizon by the time the stream came back, so no replay can deliver them. Gapless reports the
+              exact range instead of pretending the stream is whole.
+            </Event>
+          )}
           {incident.recoveredAt && (
             <Event tone="replay" title={`Recovered in ${fmt.duration(incident.durationMs)}`} at={incident.recoveredAt}>
               Caught up to the live tip. <span className="num text-foreground">{fmt.int(incident.replayed)}</span>{" "}
@@ -208,7 +227,7 @@ export function IncidentDetail({ incident, stacked = false }: { incident: Incide
       </Panel>
 
       <div className="flex flex-col gap-4">
-        {!stacked && report && <Verdict report={report} />}
+        {!stacked && report && <Verdict report={report} lost={incident.unrecoverable} />}
         {report && report.perSlot.length > 0 && (
           <Panel title="Per slot" bodyClassName="p-4">
             <VerificationStrip report={report} />

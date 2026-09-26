@@ -7,7 +7,9 @@ use anyhow::Result;
 use futures::future::BoxFuture;
 use gapless::fixture::FixtureSource;
 use gapless::{Signature, SlotRange};
-use gapless_verify::{GroundTruth, Landed, Options, Report, RpcStats, Verifier, build_report};
+use gapless_verify::{
+    GroundTruth, Landed, Options, Repaired, Report, RpcStats, Verdict, Verifier, build_report,
+};
 
 /// Finalization lag the fixture pretends to have.
 const FIXTURE_FINALITY: u64 = 32;
@@ -130,7 +132,27 @@ impl Truth for FixtureTruth {
         })
     }
 
-    fn repair<'a>(&'a self, _report: &'a mut Report) -> BoxFuture<'a, Result<()>> {
-        Box::pin(async { Ok(()) })
+    /// The fixture holds every transaction it ever played, so "fetching" a missing one is a
+    /// lookup, the stand-in for `getTransaction`.
+    fn repair<'a>(&'a self, report: &'a mut Report) -> BoxFuture<'a, Result<()>> {
+        Box::pin(async move {
+            report.repaired = report
+                .missing
+                .iter()
+                .map(|m| Repaired {
+                    signature: m.signature.clone(),
+                    slot: m.slot,
+                    block_time: None,
+                    fee_payer: None,
+                    transaction: serde_json::Value::Null,
+                })
+                .collect();
+            if !report.missing.is_empty() {
+                report.verdict = Verdict::Repaired {
+                    repaired: report.repaired.len() as u64,
+                };
+            }
+            Ok(())
+        })
     }
 }

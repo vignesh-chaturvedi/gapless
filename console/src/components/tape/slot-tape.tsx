@@ -229,7 +229,9 @@ export function SlotTape({ source = liveTape, height = 96, className, label, onS
           } else if (cell.verified) {
             ctx.fillStyle = palette.verified;
             ctx.fillRect(x, y, BAR, h);
-            ctx.fillRect(x - 1, y - 3, BAR + 2, 1.5); // cap: the "checked" cue
+            // Cap: the "checked" cue. Red when Solami dropped some and RPC filled them in.
+            if (cell.verified === "repaired") ctx.fillStyle = palette.gap;
+            ctx.fillRect(x - 1, y - 3, BAR + 2, cell.verified === "repaired" ? 2 : 1.5);
           } else if (cell.origin === "replay") {
             ctx.fillStyle = replayFill;
             ctx.fillRect(x, y, BAR, h);

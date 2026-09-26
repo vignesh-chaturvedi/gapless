@@ -17,7 +17,7 @@ use tokio::time::{MissedTickBehavior, interval, sleep};
 
 use crate::app::{App, RECENT_LOG, RECENT_TXS, TAPE_SLOTS};
 use crate::dto::{
-    ControlsDto, IncidentDto, LogDto, MetricsDto, PatchDto, Reason, SlotCell, Snapshot,
+    ControlsDto, IncidentDto, LogDto, MetricsDto, PatchDto, Reason, Sizes, SlotCell, Snapshot,
     SolamiConnDto, StateDto, StepDto, TxDto, VerificationDto, WsMessage, now_ms, unix_ms,
 };
 use crate::indexer::{Activity, Decoder, Indexer};
@@ -33,6 +33,12 @@ const TX_SAMPLE: usize = 40;
 const DUPLICATE_SAMPLE: usize = 12;
 const INCIDENTS_SHOWN: usize = 20;
 const FINALIZATION_TIMEOUT: Duration = Duration::from_secs(240);
+/// Incident verification attempts before giving up (RPC errors and throttling are usually brief).
+const VERIFY_ATTEMPTS: u32 = 3;
+/// Slots either side of a verified range whose deliveries still count toward it.
+const DELIVERED_MARGIN: u64 = 256;
+/// Verified incidents kept in memory; older ones live in the store.
+const VERIFIED_KEPT: usize = 10;
 
 enum Job {
     Tips {
@@ -88,7 +94,11 @@ pub struct Engine {
     verified_through: Option<u64>,
     /// Rolling verification stays below this while an incident is unverified.
     blocked_from: Option<u64>,
+    /// Ranges rolling verification skips: verified by an incident, or lost beyond the horizon.
+    covered: Vec<SlotRange>,
     rolling_running: bool,
+    /// Rolling verification failures in a row (RPC trouble), to log once rather than every 10 s.
+    rolling_failures: u32,
     batch_slots: Vec<SlotCell>,
     batch_txs: Vec<TxDto>,
     batch_duplicates: usize,
@@ -197,7 +207,9 @@ impl Engine {
             highest_complete: None,
             verified_through: None,
             blocked_from: None,
+            covered: Vec::new(),
             rolling_running: false,
+            rolling_failures: 0,
             batch_slots: Vec::new(),
             batch_txs: Vec::new(),
             batch_duplicates: 0,
@@ -479,6 +491,16 @@ impl Engine {
             self.publish(d.incident).await;
             return;
         }
+        // A rejected key or an exhausted balance stops the stream for good: that's a
+        // configuration problem for the console's stopped banner, not an outage to recover.
+        if d.reason.is_fatal() {
+            self.log(
+                "error",
+                format!("Solami refused the stream: {} ({})", d.reason, d.detail),
+                None,
+            );
+            return;
+        }
         let (chaos, throttled) = {
             let mut chaos = self.app.chaos.lock().expect("chaos lock");
             (
@@ -567,6 +589,9 @@ impl Engine {
         t.dto.apply(&incident);
         t.recovered = true;
         t.targets = incident.steps.iter().map(|s| s.target_slot).collect();
+        if let Some(lost) = incident.unrecoverable {
+            self.covered.push(lost);
+        }
         let id = t.dto.id;
         let gap = incident.gap.map_or("no slots missed".into(), |g| {
             format!("a gap of {}", plural(g.len(), "slot"))
@@ -618,7 +643,14 @@ impl Engine {
             return;
         };
         let target = t.targets.last().copied().unwrap_or(gap.last);
-        let range = SlotRange::new(gap.first, target + HANDOFF_SLOTS);
+        // Slots older than the replay horizon were never recovered; the incident reports them as
+        // lost instead of verifying (and backfilling) them one transaction at a time.
+        let first = t
+            .dto
+            .unrecoverable
+            .map_or(gap.first, |lost| lost.last + 1)
+            .min(target);
+        let range = SlotRange::new(first, target + HANDOFF_SLOTS);
         t.dto.verification = Some(VerificationDto {
             status: "pending",
             range: Some(range),
@@ -698,19 +730,31 @@ impl Engine {
                     .map(|&target| (incident, SlotRange::new(target, target + HANDOFF_SLOTS)))
                     .collect();
                 self.publish(incident).await;
-                let delivered = self.delivered.clone();
+                let delivered = self.delivered_near(range);
                 let (truth, jobs) = (self.truth.clone(), self.jobs.clone());
                 tokio::spawn(async move {
-                    let result = async {
-                        let mut report = truth.verify(range, &delivered, true).await?;
-                        report.explain_handoffs(&windows);
-                        if !report.missing.is_empty() {
-                            truth.repair(&mut report).await?;
+                    let mut attempt = 1;
+                    let result = loop {
+                        let result = async {
+                            let mut report = truth.verify(range, &delivered, true).await?;
+                            report.explain_handoffs(&windows);
+                            if !report.missing.is_empty() {
+                                truth.repair(&mut report).await?;
+                            }
+                            anyhow::Ok(report)
                         }
-                        anyhow::Ok(report)
-                    }
-                    .await
-                    .map_err(|e| e.to_string());
+                        .await;
+                        match result {
+                            Err(e) if attempt < VERIFY_ATTEMPTS => {
+                                tracing::warn!(
+                                    "verifying incident {incident} (attempt {attempt}): {e:#}"
+                                );
+                                attempt += 1;
+                                sleep(Duration::from_secs(15)).await;
+                            }
+                            result => break result.map_err(|e| format!("{e:#}")),
+                        }
+                    };
                     let _ = jobs.send(Job::IncidentVerified { incident, result });
                 });
             }
@@ -721,6 +765,18 @@ impl Engine {
                 self.rolling_running = false;
                 match result {
                     Ok(report) => {
+                        if self.rolling_failures > 0 {
+                            self.log(
+                                "info",
+                                format!(
+                                    "Rolling verification is back after {}",
+                                    plural(self.rolling_failures as u64, "failed attempt")
+                                ),
+                                None,
+                            );
+                            self.rolling_failures = 0;
+                        }
+                        self.count_repaired(&report);
                         let cells = self.ledger.on_verified(&report);
                         self.app.broadcast(&WsMessage::Verified {
                             range,
@@ -745,15 +801,38 @@ impl Engine {
                             );
                         }
                     }
-                    Err(e) => self.log("warn", format!("Rolling verification failed: {e}"), None),
+                    Err(e) => {
+                        self.rolling_failures += 1;
+                        if self.rolling_failures == 1 {
+                            self.log(
+                                "warn",
+                                format!("Rolling verification failed: {e}. Retrying every 10s"),
+                                None,
+                            );
+                        }
+                    }
                 }
+            }
+        }
+    }
+
+    /// Transactions fetched from RPC were delivered after all; later checks shouldn't miss them.
+    fn count_repaired(&mut self, report: &Report) {
+        for r in &report.repaired {
+            let bytes = bs58::decode(&r.signature).into_vec().unwrap_or_default();
+            if let Some(signature) = Signature::from_bytes(&bytes) {
+                self.delivered.insert(signature, r.slot);
             }
         }
     }
 
     async fn on_incident_verified(&mut self, incident: u64, result: Result<Report, String>) {
         let cells = match &result {
-            Ok(report) => self.ledger.on_verified(report),
+            Ok(report) => {
+                self.count_repaired(report);
+                self.covered.push(report.range);
+                self.ledger.on_verified(report)
+            }
             Err(_) => Vec::new(),
         };
         let Some(t) = self.tracked.get_mut(&incident) else {
@@ -835,8 +914,17 @@ impl Engine {
         else {
             return;
         };
-        let from = self.verified_through.map_or(first + 2, |v| v + 1);
+        let mut from = self.verified_through.map_or(first + 2, |v| v + 1);
+        // Step over slots an incident already verified or reported lost.
+        while let Some(r) = self.covered.iter().find(|r| r.contains(from)) {
+            from = r.last + 1;
+            self.verified_through = Some(r.last);
+        }
+        self.covered.retain(|r| r.last >= from);
         let mut to = finalized.min(high).min(from + ROLLING_MAX_SLOTS - 1);
+        if let Some(next) = self.covered.iter().map(|r| r.first).min() {
+            to = to.min(next.saturating_sub(1));
+        }
         if let Some(blocked) = self.blocked_from {
             to = to.min(blocked.saturating_sub(1));
         }
@@ -845,7 +933,7 @@ impl Engine {
         }
         self.rolling_running = true;
         let range = SlotRange::new(from, to);
-        let delivered = self.delivered.clone();
+        let delivered = self.delivered_near(range);
         let (truth, jobs) = (self.truth.clone(), self.jobs.clone());
         tokio::spawn(async move {
             let result = async {
@@ -902,6 +990,7 @@ impl Engine {
     }
 
     fn tick(&mut self) {
+        self.prune_tracked();
         // Forget delivered signatures well behind anything still to be verified.
         if let Some(keep) = self
             .blocked_from
@@ -929,9 +1018,54 @@ impl Engine {
             snapshot: &snapshot,
         });
         let tape = self.ledger.recent(TAPE_SLOTS);
+        let sizes = self.sizes();
         let mut shared = self.app.shared.write().expect("shared lock");
         shared.snapshot = snapshot;
         shared.tape = tape;
+        shared.sizes = sizes;
+    }
+
+    /// Delivered signatures a check of `range` needs: those in it, plus a margin for a
+    /// transaction the stream saw on a fork a few slots from where it finally landed.
+    fn delivered_near(&self, range: SlotRange) -> HashMap<Signature, u64> {
+        let near = SlotRange::new(
+            range.first.saturating_sub(DELIVERED_MARGIN),
+            range.last + DELIVERED_MARGIN,
+        );
+        self.delivered
+            .iter()
+            .filter(|(_, slot)| near.contains(**slot))
+            .map(|(signature, slot)| (*signature, *slot))
+            .collect()
+    }
+
+    /// Keep unverified incidents and the newest few verified ones; the store has the rest.
+    fn prune_tracked(&mut self) {
+        let mut verified: Vec<u64> = self
+            .tracked
+            .iter()
+            .filter(|(_, t)| t.verified)
+            .map(|(id, _)| *id)
+            .collect();
+        if verified.len() <= VERIFIED_KEPT {
+            return;
+        }
+        verified.sort_unstable();
+        for id in &verified[..verified.len() - VERIFIED_KEPT] {
+            self.tracked.remove(id);
+        }
+    }
+
+    /// How big the in-memory state is, for soak runs (`/api/health`).
+    pub fn sizes(&self) -> Sizes {
+        Sizes {
+            delivered: self.delivered.len(),
+            dedup: self.metrics.dedup_entries,
+            ledger: self.ledger.len(),
+            tracked_incidents: self.tracked.len(),
+            symbols: self.symbols.len(),
+            covered: self.covered.len(),
+        }
     }
 
     fn snapshot(&self) -> Snapshot {
@@ -945,6 +1079,7 @@ impl Engine {
         Snapshot {
             mode: self.app.mode,
             program: self.app.program.clone(),
+            replay_horizon: self.app.replay_horizon,
             started_at: self.started_at,
             state: self.state.clone(),
             state_since: self.state_since,

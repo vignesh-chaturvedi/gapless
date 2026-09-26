@@ -23,7 +23,7 @@ use std::sync::{Arc, Mutex, RwLock};
 use anyhow::{Context, Result};
 use clap::Parser;
 use gapless::fixture::{Fixture, FixtureSource};
-use gapless::{AccountApi, DEFAULT_API_URL, Gapless};
+use gapless::{AccountApi, DEFAULT_API_URL, Gapless, REPLAY_HORIZON};
 use gapless_verify::DEFAULT_RPC_URL;
 use tokio::sync::broadcast;
 
@@ -48,6 +48,10 @@ struct Cli {
     /// SQLite file for incident history.
     #[arg(long, default_value = "gapless.db")]
     db: PathBuf,
+    /// Offline only: how many slots back the fixture can replay (Solami's horizon is 3,000).
+    /// A small value makes the beyond-the-horizon scenario quick to try.
+    #[arg(long, requires = "offline")]
+    horizon: Option<u64>,
 }
 
 #[tokio::main]
@@ -67,6 +71,7 @@ async fn main() -> Result<()> {
             .filter(|v| !v.is_empty())
     };
     let program = var("GAPLESS_PROGRAM").unwrap_or_else(|| PUMP_FUN.to_owned());
+    let replay_horizon = cli.horizon.unwrap_or(REPLAY_HORIZON);
 
     let (gapless, truth, account, fixture, mode): (
         Gapless,
@@ -84,11 +89,15 @@ async fn main() -> Result<()> {
                 fixture.slots(),
                 fixture.duration().as_secs_f64()
             );
-            let source = FixtureSource::new(fixture);
-            let config = Gapless::builder("offline")
+            let mut source = FixtureSource::new(fixture);
+            let mut builder = Gapless::builder("offline")
                 .program(&program)
-                .account_api(None)
-                .into_config()?;
+                .account_api(None);
+            if let Some(slots) = cli.horizon {
+                source = source.with_horizon(slots);
+                builder = builder.replay_horizon(slots);
+            }
+            let config = builder.into_config()?;
             let truth = FixtureTruth::new(source.clone(), program.clone());
             (
                 Gapless::with_source(config, source.clone()),
@@ -128,6 +137,7 @@ async fn main() -> Result<()> {
     let snapshot = Snapshot {
         mode,
         program: program.clone(),
+        replay_horizon,
         started_at: now_ms(),
         state: StateDto::Connecting { attempt: 1 },
         state_since: now_ms(),
@@ -155,6 +165,7 @@ async fn main() -> Result<()> {
     let app = Arc::new(App {
         mode,
         program,
+        replay_horizon,
         control,
         account,
         fixture,
@@ -166,6 +177,7 @@ async fn main() -> Result<()> {
             incidents: Vec::new(),
             txs: VecDeque::new(),
             log: VecDeque::new(),
+            sizes: Default::default(),
         }),
         chaos: Mutex::new(Chaos {
             handoff_patch: true,

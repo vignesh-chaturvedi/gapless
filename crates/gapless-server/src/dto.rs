@@ -252,6 +252,18 @@ pub struct TxDto {
     pub at: u64,
 }
 
+/// Sizes of the engine's in-memory state, for checking that a long run stays bounded.
+#[derive(Clone, Debug, Default, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct Sizes {
+    pub delivered: usize,
+    pub dedup: usize,
+    pub ledger: usize,
+    pub tracked_incidents: usize,
+    pub symbols: usize,
+    pub covered: usize,
+}
+
 /// A line for the console's activity log.
 #[derive(Clone, Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -278,6 +290,8 @@ pub struct ControlsDto {
 pub struct Snapshot {
     pub mode: &'static str,
     pub program: String,
+    /// Slots back that a `from_slot` replay can reach (Solami: 3,000).
+    pub replay_horizon: u64,
     pub started_at: u64,
     pub state: StateDto,
     /// When the stream entered `state`, for countdowns and "replaying for" copy.

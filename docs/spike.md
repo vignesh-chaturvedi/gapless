@@ -122,10 +122,19 @@ Reports are in `docs/evidence/`.
 - **Listing watchdog (in `gapless`, every 3 s by default).** After identifying its stream, Gapless keeps polling the live list. Once the stream is missing from two answers in a row, Solami has closed it, so Gapless ends it immediately, resumes from the cursor and resolves the reason from history as usual. Live run: the close was detected 13 s after the buffer passed half full, the 486-slot gap replayed in two steps (the first also cut by backpressure), and the window verified **13,199 / 13,199, COMPLETE**.
 - **Solami's buffer is observable enough to warn before it drops you.** With samples every ~5 s, the console estimates the fill rate and the time left ("filling at +90/s, Solami drops the stream in about 30 s").
 
+## Later findings (Phase 6, chaos scenarios)
+
+- **The replay window slides while a subscription is on its way.** Resuming from exactly the first available slot (from `SubscribeReplayInfo`) fails about 1–2 s later with `OUT_OF_RANGE: broadcast from 450649411 is not available, last available: 450649417`. Gapless used to treat that as a generic error and retry the same race every 5–9 s, forever. Scenario D found it: 60 failed steps in 13 minutes. Now it classifies `OUT_OF_RANGE` as `OutOfHorizon` and starts a clamped replay 32 slots inside the window (~8 s of slide). It doubles that margin after any out-of-range answer and reports the skipped slots as lost. Our fake chain had been answering `INVALID_ARGUMENT` there, which is why the tests never caught it. It now sends Solami's real status.
+- **The handoff loss is intermittent.** Phase 2 and Phase 5 saw it on every handoff (7 of 7). In Phase 6 it hit 7 of 12 recoveries: 3 to 24 transactions each, always in one slot just past the replay target. Scenario C calls a clean handoff "inconclusive" (nothing to catch) and the runner retries it.
+- **Deep outage (15 minutes offline).** Gaps were 3,381 and 3,351 slots. Once the window was clamped, 413 and 383 slots were reported lost, with exact ranges. The rest replayed in 5 and 7 steps, each cut by backpressure after ~650–700 slots at ~2,500–5,000 tx/s. The recovered 44,658 and 53,524 transactions verified complete in ~20 s each.
+- **RPC throttling.** Through a proxy answering `-32005` to every `getTransactionsForAddress`, rolling verification logged one warning and kept retrying every 10 s. Incident verification failed twice, then verified complete on the third attempt once the throttling lifted. The console shows each state as it happens.
+- **A bad key stops cleanly.** `subscription rejected: invalid api key` is fatal: no retry loop and no incident; the console shows what to fix. A program with no traffic streams fine: empty slots complete and verify at 0 / 0.
+
 ## Open questions for Solami (@cryptociva)
 
 - Can the Pro trial be extended through judging (Oct 28)? It currently ends Oct 2, 23:32 UTC.
 - Does PAYG gRPC work on the Free plan?
 - A backpressure disconnect reaches the client as a clean end-of-stream, while the docs say `RESOURCE_EXHAUSTED`. Is that intended?
 - The replay horizon is 3,000 slots rather than the documented 3,500.
-- A resumed stream drops the start of the slot that's executing when it switches from replay to the live feed (see Phase 2 above).
+- A resumed stream drops the start of the slot that's executing when it switches from replay to the live feed (see Phase 2 above). It's intermittent (Phase 6).
+- Replaying from the reported first available slot fails with `OUT_OF_RANGE` a second later, because the window moves. Could `from_slot` older than the window start from the oldest slot still available (as `SubscribeReplayInfo` suggests), rather than failing?

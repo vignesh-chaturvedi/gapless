@@ -77,6 +77,10 @@ impl Ledger {
         changed
     }
 
+    pub fn len(&self) -> usize {
+        self.cells.len()
+    }
+
     pub fn recent(&self, limit: usize) -> Vec<SlotCell> {
         let skip = self.cells.len().saturating_sub(limit);
         self.cells.values().skip(skip).cloned().collect()

@@ -7,6 +7,7 @@ import { BufferGauge } from "@/components/live/buffer-gauge";
 import { ChaosPanel } from "@/components/live/chaos-panel";
 import { IncidentTracker } from "@/components/live/incident-tracker";
 import { IndexerPanel } from "@/components/live/indexer-panel";
+import { StoppedBanner } from "@/components/live/stopped-banner";
 import { Panel, Readout } from "@/components/panel";
 import { RollingNumber } from "@/components/rolling-number";
 import { SlotTape, TapeLegend } from "@/components/tape/slot-tape";
@@ -104,6 +105,7 @@ export function Live() {
   const link = useFeed((s) => s.link);
   const snapshot = useFeed((s) => s.snapshot);
   const drawer = useIncidentDrawer();
+  const tapeEmpty = useFeed((s) => s.tape.size === 0);
   const chaosRef = useRef<HTMLDivElement>(null);
 
   if (!snapshot && link === "closed") {
@@ -145,6 +147,12 @@ export function Live() {
         </div>
       </Rise>
 
+      {snapshot?.state.kind === "stopped" && (
+        <Rise>
+          <StoppedBanner reason={snapshot.state.reason} />
+        </Rise>
+      )}
+
       <Rise>
         <Panel
           title="Slot tape"
@@ -154,11 +162,18 @@ export function Live() {
             </span>
           }
         >
-          <SlotTape
-            height={156}
-            onSelectIncident={drawer.open}
-            label={`Slot tape. Highest complete slot ${fmt.slot(metrics?.highestComplete)}, verified through ${fmt.slot(snapshot?.verifiedThrough)}.`}
-          />
+          <div className="relative">
+            <SlotTape
+              height={156}
+              onSelectIncident={drawer.open}
+              label={`Slot tape. Highest complete slot ${fmt.slot(metrics?.highestComplete)}, verified through ${fmt.slot(snapshot?.verifiedThrough)}.`}
+            />
+            {tapeEmpty && snapshot && (
+              <p className="pointer-events-none absolute inset-0 flex items-center justify-center text-sm text-muted-foreground">
+                {snapshot.state.kind === "stopped" ? "No slots: the stream never started." : "Waiting for the first slot…"}
+              </p>
+            )}
+          </div>
           <div className="flex flex-wrap items-center justify-between gap-2 border-t border-hairline px-4 py-2.5">
             <TapeLegend />
             <span className="hidden text-xs text-faint md:inline">One bar per slot, newest on the right. Hover to inspect.</span>

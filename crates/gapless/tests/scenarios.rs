@@ -243,20 +243,60 @@ async fn outage_beyond_the_horizon_reports_the_lost_slots() {
     );
     let run = run_until(chain.clone(), 100, 1_400, |_, _| {}).await;
 
+    // The window starts at 1221; the replay starts 32 slots inside it, since the window keeps
+    // sliding while the subscription is on its way.
     assert_eq!(
         chain.requested_from_slots(),
-        vec![None, Some(1_221), Some(1_321)]
+        vec![None, Some(1_253), Some(1_321)]
     );
     let incident = &run.recovered[0];
     assert_eq!(
         incident.unrecoverable,
         Some(SlotRange {
             first: 1_021,
-            last: 1_220
+            last: 1_252
         })
     );
-    assert_exactly_once(&run, (1_001..=1_020).chain(1_221..=1_400));
-    assert!(!run.txs.iter().any(|tx| (1_022..=1_220).contains(&tx.slot)));
+    assert_exactly_once(&run, (1_001..=1_020).chain(1_253..=1_400));
+    assert!(!run.txs.iter().any(|tx| (1_022..=1_252).contains(&tx.slot)));
+}
+
+#[tokio::test(start_paused = true)]
+async fn a_replay_start_that_slid_out_of_the_horizon_is_retried_further_in() {
+    // By the time the replay lands, the window has slid 50 slots past what Solami reported:
+    // more than the 32-slot margin. Solami answers OUT_OF_RANGE; Gapless doubles the margin.
+    let chain = FakeChain::new(
+        TIP,
+        100,
+        vec![
+            Script::cut(MID_SLOT_1021, Ending::Killed, 300),
+            Script {
+                horizon_slide: 50,
+                ..Script::default()
+            },
+        ],
+    );
+    let run = run_until(chain.clone(), 100, 1_400, |_, _| {}).await;
+
+    assert_eq!(
+        chain.requested_from_slots(),
+        vec![None, Some(1_253), Some(1_285), Some(1_321)]
+    );
+    assert_eq!(run.disconnects[1].reason, DisconnectReason::OutOfHorizon);
+    assert!(
+        run.disconnects[1].detail.contains("not available"),
+        "{}",
+        run.disconnects[1].detail
+    );
+    let incident = &run.recovered[0];
+    assert_eq!(
+        incident.unrecoverable,
+        Some(SlotRange {
+            first: 1_021,
+            last: 1_284
+        })
+    );
+    assert_exactly_once(&run, (1_001..=1_020).chain(1_285..=1_400));
 }
 
 #[tokio::test(start_paused = true)]

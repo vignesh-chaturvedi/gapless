@@ -155,6 +155,12 @@
   }
 }
 
+/* A rolling number's 0-9 column: generated content, so it's never selected or copied. */
+.digit-strip::before {
+  content: "0\A 1\A 2\A 3\A 4\A 5\A 6\A 7\A 8\A 9";
+  white-space: pre;
+}
+
 /* A confirm button's arming window draining away. */
 @keyframes drain {
   from {

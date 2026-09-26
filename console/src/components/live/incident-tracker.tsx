@@ -44,6 +44,11 @@ function stages(incident: Incident, snapshot: Snapshot, now: number, slotMs: num
   const countdown =
     holding && state.kind === "backoff" ? Math.max(0, snapshot.stateSince + state.delayMs - now) : null;
   const offlineFor = (incident.steps[0]?.startedAt ?? incident.recoveredAt ?? now) - incident.openedAt;
+  // While offline, the gap ages out of Solami's replay horizon from its oldest slot.
+  const horizon = snapshot.replayHorizon ?? 3_000;
+  const behind =
+    holding && snapshot.tip != null && incident.resumeFrom != null ? snapshot.tip - incident.resumeFrom + 1 : null;
+  const replayable = behind !== null ? horizon - behind : null;
   const drop: Stage = {
     key: "drop",
     title: "Disconnected",
@@ -56,7 +61,18 @@ function stages(incident: Incident, snapshot: Snapshot, now: number, slotMs: num
         {fmt.sentence(incident.reason.text)}.{" "}
         {countdown !== null ? (
           <>
-            Reconnecting in <Num>{fmt.duration(countdown)}</Num>
+            Reconnecting in <Num>{fmt.duration(countdown)}</Num>.
+            {replayable !== null &&
+              (replayable > 0 ? (
+                <span className="block">
+                  Replayable for{" "}
+                  <Num>{slotMs ? `~${fmt.duration(replayable * slotMs)}` : `${fmt.int(replayable)} slots`}</Num> more.
+                </span>
+              ) : (
+                <span className="block text-gap">
+                  <Num>{fmt.int(-replayable)}</Num> slots already past Solami's replay horizon.
+                </span>
+              ))}
           </>
         ) : (
           <>
@@ -80,6 +96,12 @@ function stages(incident: Incident, snapshot: Snapshot, now: number, slotMs: num
         : null,
     detail: incident.recoveredAt ? (
       <>
+        {incident.unrecoverable && (
+          <span className="block text-gap">
+            <Num>{fmt.int(incident.unrecoverable.last - incident.unrecoverable.first + 1)}</Num> slots lost: older than
+            Solami's replay horizon.
+          </span>
+        )}
         <Num>{fmt.int(incident.replayed)}</Num> transactions
         {incident.gap && (
           <>

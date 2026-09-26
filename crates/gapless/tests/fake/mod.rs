@@ -49,6 +49,9 @@ pub struct Script {
     /// On a `from_slot` subscription, drop this many transactions from the start of the first
     /// slot past the tip: the slot executing when Solami switches the stream to the live feed.
     pub handoff_loss: usize,
+    /// How far the replay window has slid by the time this subscription lands, beyond what
+    /// `first_available` reported.
+    pub horizon_slide: u64,
 }
 
 impl Default for Script {
@@ -60,6 +63,7 @@ impl Default for Script {
             reject: None,
             duplicate_every: None,
             handoff_loss: 0,
+            horizon_slide: 0,
         }
     }
 }
@@ -166,13 +170,13 @@ impl Source for FakeChain {
                 if let Some(status) = script.reject.clone() {
                     return Err(status);
                 }
-                let first_available = s.tip.saturating_sub(s.horizon);
+                let first_available = s.tip.saturating_sub(s.horizon) + script.horizon_slide;
                 if let Some(from) = request.from_slot
                     && from < first_available
                 {
-                    return Err(Status::invalid_argument(
-                        "from_slot is older than the replay horizon",
-                    ));
+                    return Err(Status::out_of_range(format!(
+                        "broadcast from {from} is not available, last available: {first_available}"
+                    )));
                 }
                 let handoff_slot = request.from_slot.map(|_| s.tip + 1);
                 (request.from_slot.unwrap_or(s.tip + 1), script, handoff_slot)

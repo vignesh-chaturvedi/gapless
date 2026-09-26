@@ -47,6 +47,9 @@ pub enum Error {
     Unsupported(String),
 }
 
+/// The most missing transactions [`Verifier::repair`] fetches for one report.
+pub const REPAIR_MAX: usize = 500;
+
 #[derive(Clone, Debug)]
 pub struct Options {
     /// Slots per `getTransactionsForAddress` request chunk.
@@ -318,16 +321,23 @@ impl Verifier {
         Ok(checked.into_iter().map(|(check, _)| check).collect())
     }
 
-    /// Fetch every missing transaction with `getTransaction`, the way a consumer would backfill
-    /// it. If all of them turn up, the verdict becomes [`Verdict::Repaired`].
+    /// Fetch missing transactions with `getTransaction`, the way a consumer would backfill them:
+    /// up to [`REPAIR_MAX`], a few at a time. If every missing one turns up, the verdict becomes
+    /// [`Verdict::Repaired`]; a larger loss stays [`Verdict::Incomplete`] and is left to replay.
     pub async fn repair(&self, report: &mut Report) -> Result<(), Error> {
-        let fetched = futures::future::try_join_all(
-            report
-                .missing
-                .iter()
-                .map(|m| self.rpc.transaction(&m.signature)),
-        )
-        .await?;
+        use futures::{StreamExt, TryStreamExt};
+        let signatures: Vec<String> = report
+            .missing
+            .iter()
+            .take(REPAIR_MAX)
+            .map(|m| m.signature.clone())
+            .collect();
+        let rpc = &self.rpc;
+        let fetched: Vec<_> = futures::stream::iter(signatures)
+            .map(|signature| async move { rpc.transaction(&signature).await })
+            .buffered(self.options.concurrency.max(1) * 2)
+            .try_collect()
+            .await?;
         report.repaired = report
             .missing
             .iter()

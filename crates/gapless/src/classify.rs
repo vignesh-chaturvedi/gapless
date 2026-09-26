@@ -31,6 +31,9 @@ pub enum DisconnectReason {
     Network,
     /// The subscription itself was refused (bad key, filter over limits).
     Rejected,
+    /// The replay's `from_slot` had already left Solami's replay horizon: the window slides
+    /// on while a subscription is on its way.
+    OutOfHorizon,
     Other(String),
 }
 
@@ -52,6 +55,8 @@ impl DisconnectReason {
             Code::PermissionDenied | Code::InvalidArgument | Code::Unauthenticated => {
                 Self::Rejected
             }
+            // "broadcast from 450649411 is not available, last available: 450649417"
+            Code::OutOfRange => Self::OutOfHorizon,
             Code::Unavailable | Code::Unknown | Code::Internal | Code::Cancelled => Self::Network,
             code => Self::Other(format!("{code:?}")),
         }
@@ -92,6 +97,7 @@ impl DisconnectReason {
             Self::Cut => "cut",
             Self::Network => "network",
             Self::Rejected => "rejected",
+            Self::OutOfHorizon => "out_of_horizon",
             Self::Other(s) => s,
         }
     }
@@ -114,6 +120,7 @@ impl fmt::Display for DisconnectReason {
             Self::Cut => "cut by the client",
             Self::Network => "network error",
             Self::Rejected => "subscription rejected",
+            Self::OutOfHorizon => "the replay start had left Solami's replay horizon",
             Self::Other(s) => return write!(f, "{s}"),
         };
         f.write_str(text)
@@ -123,6 +130,16 @@ impl fmt::Display for DisconnectReason {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn a_replay_start_past_the_horizon() {
+        let status = Status::out_of_range(
+            "broadcast from 450649411 is not available, last available: 450649417",
+        );
+        let reason = DisconnectReason::from_status(&status);
+        assert_eq!(reason, DisconnectReason::OutOfHorizon);
+        assert!(!reason.is_fatal());
+    }
 
     #[test]
     fn kill_through_the_account_api() {

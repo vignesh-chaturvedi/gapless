@@ -39,7 +39,8 @@ fn error(status: StatusCode, message: impl Into<String>) -> Response {
 }
 
 async fn health(State(app): AppState) -> Json<serde_json::Value> {
-    Json(json!({ "ok": true, "mode": app.mode }))
+    let sizes = app.shared.read().expect("shared lock").sizes.clone();
+    Json(json!({ "ok": true, "mode": app.mode, "sizes": sizes }))
 }
 
 async fn state(State(app): AppState) -> Response {

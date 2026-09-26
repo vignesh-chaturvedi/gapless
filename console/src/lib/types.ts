@@ -87,6 +87,8 @@ export interface Indexer {
 export interface Snapshot {
   mode: "live" | "offline";
   program: string;
+  /** Slots back that a from_slot replay can reach (Solami: 3,000). */
+  replayHorizon?: number;
   startedAt: number;
   state: StreamState;
   /** When the stream entered `state` (unix ms). */

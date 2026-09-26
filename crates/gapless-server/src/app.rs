@@ -5,7 +5,7 @@ use gapless::fixture::FixtureSource;
 use gapless::{AccountApi, Control};
 use tokio::sync::broadcast;
 
-use crate::dto::{IncidentDto, LogDto, SlotCell, Snapshot, TxDto, WsMessage};
+use crate::dto::{IncidentDto, LogDto, Sizes, SlotCell, Snapshot, TxDto, WsMessage};
 use crate::store::Store;
 
 pub const RECENT_TXS: usize = 200;
@@ -16,6 +16,8 @@ pub const TAPE_SLOTS: usize = 600;
 pub struct App {
     pub mode: &'static str,
     pub program: String,
+    /// Slots back that a `from_slot` replay can reach.
+    pub replay_horizon: u64,
     pub control: Control,
     /// Solami's account API. `None` offline.
     pub account: Option<AccountApi>,
@@ -34,6 +36,7 @@ pub struct Shared {
     pub incidents: Vec<IncidentDto>,
     pub txs: VecDeque<TxDto>,
     pub log: VecDeque<LogDto>,
+    pub sizes: Sizes,
 }
 
 /// Settings the chaos panel changed, and how the next incident was caused.

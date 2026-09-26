@@ -33,6 +33,8 @@ const ZSTD_MAGIC: [u8; 4] = [0x28, 0xb5, 0x2f, 0xfd];
 pub const EMULATED_BUFFER: u64 = 8_192;
 /// A stream within this many frames of the live edge has caught up.
 const CAUGHT_UP: u64 = 64;
+/// Slots past the tip at resume time where the emulated handoff loss hits (mainnet: 7 and 8).
+const HANDOFF_OFFSET: u64 = 7;
 
 /// One recorded update.
 #[derive(Clone, Debug)]
@@ -227,6 +229,23 @@ impl Fixture {
     }
 }
 
+fn is_transaction(update: &SubscribeUpdate) -> bool {
+    matches!(update.update_oneof, Some(UpdateOneof::Transaction(_)))
+}
+
+/// Where a resumed stream meets the live feed: the next slot with transactions, and how many of
+/// them (the first half) to lose.
+fn handoff_cut(fixture: &Fixture, from: usize) -> Option<(u64, usize)> {
+    let first =
+        (from..fixture.frames.len()).find(|&i| is_transaction(&fixture.frames[i].update))?;
+    let slot = fixture.position[first];
+    let txs = (first..fixture.frames.len())
+        .take_while(|&i| fixture.position[i] == slot)
+        .filter(|&i| is_transaction(&fixture.frames[i].update))
+        .count();
+    Some((slot, txs.div_ceil(2)))
+}
+
 /// The slot a frame belongs to for positioning: a transaction's slot, or a `SlotProcessed` slot.
 fn position_slot(update: &SubscribeUpdate) -> Option<u64> {
     match &update.update_oneof {
@@ -281,6 +300,8 @@ pub struct FixtureSource {
     /// Wall-clock time of `started`, for [`FixtureSource::slot_time`].
     started_at: SystemTime,
     pending: Arc<AtomicU64>,
+    horizon: u64,
+    handoff_loss: bool,
 }
 
 /// One subscription's read position.
@@ -288,8 +309,29 @@ struct Playback {
     source: FixtureSource,
     k: u64,
     index: usize,
+    /// Reached the live edge (and started reporting into the buffer).
     caught_up: bool,
+    handoff: Handoff,
     closed: bool,
+}
+
+/// Where a resumed stream will lose transactions, as Solami's does.
+enum Handoff {
+    None,
+    /// Cut the first slot with transactions at or after this (absolute) slot.
+    At(u64),
+    /// Dropping from this slot: (loop, local slot, transactions still to drop).
+    Cutting(u64, u64, usize),
+}
+
+impl Playback {
+    fn advance(&mut self) {
+        self.index += 1;
+        if self.index == self.source.fixture.frames.len() {
+            self.index = 0;
+            self.k += 1;
+        }
+    }
 }
 
 impl Drop for Playback {
@@ -308,7 +350,25 @@ impl FixtureSource {
             started: Instant::now(),
             started_at: SystemTime::now(),
             pending: Arc::new(AtomicU64::new(0)),
+            horizon: REPLAY_HORIZON,
+            handoff_loss: true,
         }
+    }
+
+    /// Emulate Solami's handoff loss (on by default): a resumed stream loses the first half of
+    /// the transactions in the slot where it switches to the live feed, 7 slots past the tip at
+    /// the time of the resume, though the slot still completes. Phase 2 found this on mainnet
+    /// (at the target + 7 and + 8); the handoff patch recovers it.
+    pub fn with_handoff_loss(mut self, on: bool) -> Self {
+        self.handoff_loss = on;
+        self
+    }
+
+    /// Replay only this many slots back (Solami's is 3,000), so an outage past the horizon can
+    /// be tried in a minute instead of thirteen.
+    pub fn with_horizon(mut self, slots: u64) -> Self {
+        self.horizon = slots;
+        self
     }
 
     /// When the playback produced `slot`: the fixture's stand-in for block time. A recording's
@@ -364,11 +424,11 @@ impl Source for FixtureSource {
             let (now_k, now_index) = this.now();
             let (k, index) = match request.from_slot {
                 Some(slot) => {
-                    let first = this.current_tip().saturating_sub(REPLAY_HORIZON);
+                    let first = this.current_tip().saturating_sub(this.horizon);
                     if slot < first {
-                        return Err(Status::invalid_argument(
-                            "from_slot is older than the replay horizon",
-                        ));
+                        return Err(Status::out_of_range(format!(
+                            "broadcast from {slot} is not available, last available: {first}"
+                        )));
                     }
                     let located = this.fixture.locate(slot);
                     // Never start in the future.
@@ -380,11 +440,18 @@ impl Source for FixtureSource {
                 }
                 None => (now_k, now_index),
             };
+            let resumed = request.from_slot.is_some() && (k, index) < (now_k, now_index);
+            let handoff = if resumed && this.handoff_loss {
+                Handoff::At(this.current_tip() + HANDOFF_OFFSET)
+            } else {
+                Handoff::None
+            };
             let playback = Playback {
                 source: this,
                 k,
                 index,
                 caught_up: false,
+                handoff,
                 closed: false,
             };
             let stream = stream::unfold(playback, |mut p| async move {
@@ -392,36 +459,52 @@ impl Source for FixtureSource {
                     return None;
                 }
                 let fixture = p.source.fixture.clone();
-                let due = fixture.duration * p.k as u32 + fixture.frames[p.index].offset;
-                let elapsed = p.source.started.elapsed();
-                if due > elapsed {
-                    tokio::time::sleep(due - elapsed).await;
-                }
-                // Frames already due that this consumer hasn't read: Solami's `buffer_pending`.
                 let len = fixture.frames.len() as u64;
-                let (now_k, now_index) = p.source.now();
-                let backlog =
-                    (now_k * len + now_index as u64).saturating_sub(p.k * len + p.index as u64);
-                if backlog <= CAUGHT_UP {
-                    p.caught_up = true;
-                }
-                if p.caught_up {
-                    p.source.pending.store(backlog, Ordering::Relaxed);
-                    if backlog > EMULATED_BUFFER {
-                        p.closed = true;
-                        let status = Status::resource_exhausted(
-                            "stream backpressure: client too slow, please reconnect",
-                        );
-                        return Some((Err(status), p));
+                loop {
+                    let due = fixture.duration * p.k as u32 + fixture.frames[p.index].offset;
+                    let elapsed = p.source.started.elapsed();
+                    if due > elapsed {
+                        tokio::time::sleep(due - elapsed).await;
                     }
+                    // Frames already due that this consumer hasn't read: Solami's `buffer_pending`.
+                    let (now_k, now_index) = p.source.now();
+                    let backlog =
+                        (now_k * len + now_index as u64).saturating_sub(p.k * len + p.index as u64);
+                    if backlog <= CAUGHT_UP {
+                        p.caught_up = true;
+                    }
+                    if p.caught_up {
+                        p.source.pending.store(backlog, Ordering::Relaxed);
+                        if backlog > EMULATED_BUFFER {
+                            p.closed = true;
+                            let status = Status::resource_exhausted(
+                                "stream backpressure: client too slow, please reconnect",
+                            );
+                            return Some((Err(status), p));
+                        }
+                    }
+                    let position = fixture.position[p.index];
+                    let is_tx = is_transaction(&fixture.frames[p.index].update);
+                    if let Handoff::At(at) = p.handoff
+                        && is_tx
+                        && position + p.k * fixture.span() >= at
+                    {
+                        p.handoff = handoff_cut(&fixture, p.index)
+                            .map_or(Handoff::None, |(slot, n)| Handoff::Cutting(p.k, slot, n));
+                    }
+                    if let Handoff::Cutting(k, slot, left) = &mut p.handoff {
+                        if p.k != *k || position > *slot || *left == 0 {
+                            p.handoff = Handoff::None;
+                        } else if position == *slot && is_tx {
+                            *left -= 1;
+                            p.advance();
+                            continue;
+                        }
+                    }
+                    let update = fixture.frame_in_loop(p.index, p.k);
+                    p.advance();
+                    return Some((Ok(update), p));
                 }
-                let update = fixture.frame_in_loop(p.index, p.k);
-                p.index += 1;
-                if p.index == fixture.frames.len() {
-                    p.index = 0;
-                    p.k += 1;
-                }
-                Some((Ok(update), p))
             });
             Ok(Box::pin(stream) as UpdateStream)
         })
@@ -433,13 +516,15 @@ impl Source for FixtureSource {
     }
 
     fn first_available(&self) -> BoxFuture<'static, Result<Option<u64>, Status>> {
-        let first = self.current_tip().saturating_sub(REPLAY_HORIZON);
+        let first = self.current_tip().saturating_sub(self.horizon);
         Box::pin(async move { Ok(Some(first)) })
     }
 }
 
 #[cfg(test)]
 mod tests {
+    use std::collections::HashMap;
+
     use futures::StreamExt;
     use solami::geyser::{
         SubscribeUpdateSlot, SubscribeUpdateTransaction, SubscribeUpdateTransactionInfo,
@@ -551,6 +636,57 @@ mod tests {
             "history arrives without waiting"
         );
     }
+    #[tokio::test(start_paused = true)]
+    async fn a_resumed_stream_loses_part_of_the_slot_where_it_meets_live() {
+        // Slots 100..300, four transactions and a SlotProcessed each, 10 ms apart.
+        let mut frames = Vec::new();
+        for (i, slot) in (100..300u64).enumerate() {
+            let offset = Duration::from_millis(10 * i as u64);
+            for n in 0..4 {
+                frames.push(Frame {
+                    offset,
+                    update: tx(slot, (slot * 4 + n) as u8),
+                });
+            }
+            frames.push(Frame {
+                offset,
+                update: processed(slot),
+            });
+        }
+        let source = FixtureSource::new(Fixture::from_frames(frames).unwrap());
+        tokio::time::advance(Duration::from_millis(1_500)).await;
+
+        let request = SubscribeRequest {
+            from_slot: Some(110),
+            ..Default::default()
+        };
+        let mut stream = source.subscribe(request).await.unwrap();
+        let mut txs: HashMap<u64, usize> = HashMap::new();
+        let mut completed = Vec::new();
+        while completed.last().is_none_or(|s| *s < 280) {
+            match stream.next().await.unwrap().unwrap().update_oneof {
+                Some(UpdateOneof::Transaction(t)) => *txs.entry(t.slot).or_default() += 1,
+                Some(UpdateOneof::Slot(s)) => completed.push(s.slot),
+                _ => {}
+            }
+        }
+        let short: Vec<_> = (110..=280)
+            .filter(|s| txs.get(s).copied().unwrap_or(0) < 4)
+            .collect();
+        assert_eq!(
+            short.len(),
+            1,
+            "exactly one slot loses transactions: {short:?}"
+        );
+        assert_eq!(
+            txs.get(&short[0]).copied().unwrap_or(0),
+            2,
+            "the first half of it"
+        );
+        assert!(completed.contains(&short[0]), "and it still completes");
+        assert_eq!(short[0], 257, "7 slots past the tip at the resume (250)");
+    }
+
     #[tokio::test(start_paused = true)]
     async fn a_slow_reader_fills_the_emulated_buffer_and_is_closed() {
         let frames = (0..10_000u64)

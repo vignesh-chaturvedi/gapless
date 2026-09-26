@@ -26,6 +26,10 @@ export type IncidentTone = "gap" | "replay" | "verified" | "idle";
 export function incidentStatus(incident: Incident): { label: string; tone: IncidentTone } {
   const v = incident.verification;
   if (incident.status === "open") return { label: "Open", tone: "gap" };
+  // Slots older than the replay horizon can't be recovered; that outweighs a clean verification.
+  if (incident.unrecoverable && v?.status !== "pending" && v?.status !== "running") {
+    return { label: "Partly lost", tone: "gap" };
+  }
   if (v?.status === "done") {
     const kind = v.report?.verdict.kind;
     if (kind === "complete") return { label: "Verified", tone: "verified" };

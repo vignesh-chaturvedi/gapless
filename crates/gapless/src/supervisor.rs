@@ -244,6 +244,8 @@ struct Supervisor {
     backoff: Backoff,
     throttle: Option<Duration>,
     hold: Option<Duration>,
+    /// Slots inside the horizon edge to start a clamped replay at; see `Config::horizon_margin`.
+    horizon_margin: u64,
     incident: Option<Incident>,
     incidents_opened: u64,
     replay: Option<Replay>,
@@ -276,6 +278,7 @@ impl Supervisor {
         let (resolved_tx, resolved_rx) = mpsc::unbounded_channel();
         let (patch_tx, patch_rx) = mpsc::unbounded_channel();
         let (gone_tx, gone_rx) = mpsc::unbounded_channel();
+        let horizon_margin = config.horizon_margin;
         Self {
             cursor: SlotCursor::new(config.commitment),
             dedup: DedupWindow::new(config.replay_horizon + DEDUP_MARGIN),
@@ -288,6 +291,7 @@ impl Supervisor {
             control_open: true,
             throttle: None,
             hold: None,
+            horizon_margin,
             incident: None,
             incidents_opened: 0,
             replay: None,
@@ -341,6 +345,9 @@ impl Supervisor {
             };
             let lookup = self.history_lookup();
             self.stats.reconnects += 1;
+            if reason == DisconnectReason::OutOfHorizon {
+                self.horizon_margin = (self.horizon_margin * 2).min(1_024);
+            }
             let Some((incident, step)) = self.on_disconnect(reason.clone(), detail.clone()).await
             else {
                 return;
@@ -394,9 +401,11 @@ impl Supervisor {
         if let Ok(Some(first)) = first_available
             && from < first
         {
+            // Start safely inside the window: it keeps sliding while the subscription travels.
+            let start = first + self.horizon_margin;
             let lost = SlotRange {
                 first: from,
-                last: first - 1,
+                last: start - 1,
             };
             incident.unrecoverable = Some(match incident.unrecoverable {
                 Some(prev) => SlotRange {
@@ -405,7 +414,7 @@ impl Supervisor {
                 },
                 None => lost,
             });
-            from = first;
+            from = start;
         }
         let target = tip.unwrap_or(from).max(from);
         if incident.gap.is_none() {
@@ -760,6 +769,7 @@ impl Supervisor {
             });
         }
         self.backoff.reset();
+        self.horizon_margin = self.config.horizon_margin;
         if let Some(mut incident) = self.incident.take() {
             incident.recovered_at = Some(SystemTime::now());
             if !self.emit(Event::Recovered(incident)).await {

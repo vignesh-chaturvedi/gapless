@@ -29,6 +29,10 @@ pub struct Config {
     /// stream ended. `None` turns that off.
     pub account_api: Option<String>,
     pub replay_horizon: u64,
+    /// When a replay has to start at the edge of Solami's horizon, start this many slots inside
+    /// it: the window slides ~4 slots a second, so the edge slot is gone by the time the
+    /// subscription lands. Doubles after each out-of-range answer during an incident.
+    pub horizon_margin: u64,
     /// Drop and reconnect when nothing (not even a ping) arrives for this long.
     pub stall_timeout: Duration,
     /// How often to ask for the chain tip while streaming.
@@ -65,6 +69,7 @@ impl Config {
             compression: true,
             account_api: Some(DEFAULT_API_URL.to_owned()),
             replay_horizon: REPLAY_HORIZON,
+            horizon_margin: 32,
             stall_timeout: Duration::from_secs(30),
             tip_interval: Duration::from_secs(2),
             watch_interval: Some(Duration::from_secs(3)),
