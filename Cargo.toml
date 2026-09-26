@@ -1,6 +1,6 @@
 [workspace]
 resolver = "3"
-members = ["tools/probe"]
+members = ["crates/gapless", "tools/probe"]
 
 [workspace.package]
 version = "0.1.0"
@@ -22,3 +22,6 @@ anyhow = "1"
 clap = { version = "4", features = ["derive"] }
 dotenvy = "0.15"
 bs58 = "0.5"
+thiserror = "2"
+fastrand = "2"
+gapless = { path = "crates/gapless" }

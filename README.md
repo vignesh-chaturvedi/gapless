@@ -11,6 +11,39 @@ Gapless runs on [Solami](https://solami.dev)'s Yellowstone gRPC. When the connec
 - Rust (stable, via rustup) and `cmake` (the Solami SDK compiles `protoc` from source)
 - A Solami standard API key with the Developer role
 
+## The `gapless` crate
+
+`crates/gapless` wraps a Solami transaction subscription and keeps it whole across disconnects:
+
+- **Resume point:** it tracks slot completeness (a slot is complete once its `SlotProcessed` arrives) and resumes from the lowest incomplete slot with `from_slot`.
+- **Deep replays:** when Solami closes a replay for backpressure, it keeps resuming from its cursor until it's live again.
+- **Duplicates:** it drops re-sent transactions by signature.
+- **Disconnect reasons:** it takes them from the gRPC status, or from Solami's connection history when the stream just ends.
+
+```rust
+use futures::StreamExt;
+
+let (mut events, control) = gapless::Gapless::builder(api_key)
+    .program("6EF8rrecthR5Dkzon8Nwu78hRvfCKubJ14M5uBEwF6P")
+    .build()?
+    .start();
+while let Some(event) = events.next().await {
+    match event {
+        gapless::Event::Transaction(tx) => { /* each transaction exactly once */ }
+        gapless::Event::Recovered(incident) => { /* gap, replay steps, duplicates dropped */ }
+        _ => {}
+    }
+}
+```
+
+Watch it live, then kill its stream (dashboard or `DELETE /auth/connections/grpc/{id}`) to see it recover:
+
+```bash
+GAPLESS_HOLD_SECS=60 cargo run -p gapless --example tail --release
+```
+
+`GAPLESS_HOLD_SECS` keeps the client offline that long after the drop, so the kill becomes a real outage to replay.
+
 ## Phase 0 probe
 
 ```bash

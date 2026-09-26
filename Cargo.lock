@@ -759,6 +759,26 @@ dependencies = [
 ]
 
 [[package]]
+name = "gapless"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "bs58",
+ "dotenvy",
+ "fastrand",
+ "futures",
+ "reqwest",
+ "rustls",
+ "serde",
+ "serde_json",
+ "solami",
+ "thiserror",
+ "tokio",
+ "tokio-stream",
+ "tonic",
+]
+
+[[package]]
 name = "gapless-probe"
 version = "0.1.0"
 dependencies = [

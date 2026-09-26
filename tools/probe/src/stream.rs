@@ -536,3 +536,65 @@ pub async fn record(env: &Env, secs: u64, out: Option<PathBuf>) -> Result<()> {
     );
     Ok(())
 }
+
+/// Which unary Geyser RPCs does Solami answer, and what metadata comes back on subscribe?
+pub async fn unary(env: &Env) -> Result<()> {
+    use solami::geyser::{GetSlotRequest, GetVersionRequest};
+    let channel = Channel::from_shared(env.grpc_url.clone())?
+        .tls_config(ClientTlsConfig::new().with_native_roots())?
+        .connect()
+        .await?;
+    let mut client = GeyserClient::new(channel);
+    for commitment in [
+        CommitmentLevel::Processed,
+        CommitmentLevel::Confirmed,
+        CommitmentLevel::Finalized,
+    ] {
+        let t = Instant::now();
+        let res = client
+            .get_slot(authed_stream(
+                env,
+                GetSlotRequest {
+                    commitment: Some(commitment as i32),
+                },
+            )?)
+            .await;
+        match res {
+            Ok(r) => println!(
+                "GetSlot {commitment:?}: {} ({} ms)",
+                r.into_inner().slot,
+                t.elapsed().as_millis()
+            ),
+            Err(st) => println!("GetSlot {commitment:?}: {}", describe(&st)),
+        }
+    }
+    match client
+        .get_version(authed_stream(env, GetVersionRequest {})?)
+        .await
+    {
+        Ok(r) => println!("GetVersion: {}", r.into_inner().version),
+        Err(st) => println!("GetVersion: {}", describe(&st)),
+    }
+    let (sink, rx) = mpsc::channel(4);
+    sink.send(request(&env.program, CommitmentLevel::Processed, None))
+        .await?;
+    let resp = client
+        .subscribe(authed_stream(env, ReceiverStream::new(rx))?)
+        .await?;
+    println!("subscribe response metadata:");
+    for kv in resp.metadata().iter() {
+        match kv {
+            tonic::metadata::KeyAndValueRef::Ascii(k, v) => {
+                println!("  {k}: {}", v.to_str().unwrap_or("?"))
+            }
+            tonic::metadata::KeyAndValueRef::Binary(k, _) => println!("  {k}: <binary>"),
+        }
+    }
+    Ok(())
+}
+
+fn authed_stream<T>(env: &Env, body: T) -> Result<tonic::Request<T>> {
+    let mut req = tonic::Request::new(body);
+    req.metadata_mut().insert("x-token", env.api_key.parse()?);
+    Ok(req)
+}

@@ -29,7 +29,7 @@ Run on 2026-09-26 against mainnet with a standard API key (Developer role, Pro t
 - Replay starts exactly at `from_slot`, arrives in slot order (0 regressions), and includes the slot status updates for the replayed slots.
 - Catch-up speed is ~75 slots/s, or ~1,700 tx/s. A 100-slot gap caught up to live in 4.2 s.
 - **A replay of 500 slots is closed by the server before it reaches live.** This happened every time: 4 runs, debug and release builds, with and without zstd. The connection history records `termination_reason: "backpressure"`. The replay backlog (~8,400–10,000 messages) overflows the 8,192-message `grpc_buffer_size`.
-- **The client sees a clean end-of-stream, not the `RESOURCE_EXHAUSTED` status the troubleshooting docs describe.** Without asking the history API, a backpressure disconnect looks identical to a normal close.
+- **In these probe runs the client saw a clean end-of-stream, not the `RESOURCE_EXHAUSTED` status the troubleshooting docs describe.** Without asking the history API, that backpressure disconnect looks identical to a normal close. In Phase 1's live runs Solami did both: one replay step ended with `RESOURCE_EXHAUSTED: stream backpressure: client too slow, please reconnect`, and the next with a clean end-of-stream that the history API recorded as `backpressure`.
 - Asking for zstd-compressed responses (our own tonic client, since the SDK doesn't negotiate compression) got further (~10,000 transactions) but didn't prevent the close.
 
 ## 3. Account API (`connections`)
@@ -83,7 +83,7 @@ The Phase 0 capture, `fixtures/raw/capture-1790381350.bin`, holds 597 s of live 
 
 1. **Resume point.** A slot is complete when its `SlotProcessed` arrives. Resume from the lowest slot that has transactions but no `SlotProcessed` yet, otherwise from the highest completed slot + 1. Keep signature dedup anyway, because the kill test proved overlap happens.
 2. **Replay stepping.** Gaps above ~450 Pump.fun slots will trip backpressure mid-replay. The supervisor keeps resuming from its cursor, with backoff, until it's live. Each step is recorded as part of the same incident. Replay horizon: 3,000 slots (~13 min). Beyond that, the gap is reported as unrecoverable by replay.
-3. **Disconnect reasons.** Classify by the gRPC status when there is one (`Cancelled: stream terminated by user` means killed). Otherwise look up `termination_reason` in `/auth/connections/grpc/history`, because a clean end-of-stream can hide backpressure.
+3. **Disconnect reasons.** Classify by the gRPC status when there is one (`Cancelled: stream terminated by user` means killed). Otherwise look up `termination_reason` in `/auth/connections/grpc/history`, because a clean end-of-stream can hide backpressure. Solami sends backpressure both ways.
 4. **Verifier.**
    - Main source of truth: `getTransactionsForAddress` over the incident's slot range, filtered to succeeded.
    - Independent spot check: `getBlock` (full, v1) on a few sampled slots, including lookup-table addresses.
@@ -91,6 +91,14 @@ The Phase 0 capture, `fixtures/raw/capture-1790381350.bin`, holds 597 s of live 
 5. **Account API auth.** Send the API key as `Authorization: Bearer`. No session token needed.
 6. **Compression.** Ask for zstd on our own tonic client. It cuts bytes on the wire and lets replay get further before backpressure.
 7. **Buffer policy.** Consider raising `grpc_buffer_size` to 32,768 in the dashboard before recording the demo. Scenario C (`drop_new`) also needs a dashboard policy change, because the Developer role has only PolicyView.
+
+## Later findings (Phase 1, live runs)
+
+- **Kills are recorded as `termination_reason: "user_kill"`.** Other values seen: `backpressure`, `client_disconnect`.
+- **History rows appear ~4–10 s after a stream ends.** In one measurement, a killed stream's row showed up after 10.5 s. Gapless reconnects straight away and resolves the reason in the background (`Event::ReasonResolved`).
+- **A replay-step connection ends server-side within ~2 s** (history shows a 2-second duration). The client then keeps draining already-buffered data for 5–20 s before it sees the close. By then the connection has usually left the live list, so Gapless matches its history row by start time when it never learned the id.
+- **Deep replay on mainnet:** a 150 s outage (553–561 slots) recovered in 2–3 steps, each getting 250–350 slots before Solami's backpressure cut. Catch-up ran at ~2,300–2,600 tx/s. Across five live runs the consumer saw **0 repeated transactions** (19–21k replayed per deep run).
+- **Solami's gRPC also answers `GetSlot`** (~155 ms, processed/confirmed/finalized) and `GetVersion` (Yellowstone 15.2.1). Gapless uses `GetSlot` for replay targets and lag.
 
 ## Open questions for Solami (@cryptociva)
 

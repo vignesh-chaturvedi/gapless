@@ -60,6 +60,8 @@ enum Cmd {
         #[arg(long, default_value_t = 16)]
         concurrency: usize,
     },
+    /// Try Solami's unary Geyser RPCs and print subscribe response metadata.
+    Unary,
     /// Summarize a capture written by `record`.
     Inspect { path: PathBuf },
     /// Record the live stream to fixtures/raw/ for offline development.
@@ -109,6 +111,7 @@ async fn main() -> Result<()> {
         Cmd::Kill { after } => stream::kill(&env, after).await,
         Cmd::Blocks { count, concurrency } => blocks::blocks(&env, count, concurrency).await,
         Cmd::Record { secs, out } => stream::record(&env, secs, out).await,
+        Cmd::Unary => stream::unary(&env).await,
         Cmd::Inspect { .. } => unreachable!("handled before loading the environment"),
     }
 }
