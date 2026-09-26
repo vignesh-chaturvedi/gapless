@@ -284,12 +284,15 @@ impl Engine {
                 let id = t.dto.id;
                 let text = match &error {
                     None if recovered > 0 => format!(
-                        "Handoff patch re-read slots {}..={} and recovered {recovered} transaction(s) dropped at the switch to live",
-                        slots.first, slots.last
+                        "Handoff patch re-read slots {}–{} and recovered {} Solami dropped at the switch to live",
+                        grouped(slots.first),
+                        grouped(slots.last),
+                        plural(recovered, "transaction")
                     ),
                     None => format!(
-                        "Handoff patch re-read slots {}..={}: nothing was dropped",
-                        slots.first, slots.last
+                        "Handoff patch re-read slots {}–{}: nothing was dropped",
+                        grouped(slots.first),
+                        grouped(slots.last)
                     ),
                     Some(e) => format!("Handoff patch failed: {e}"),
                 };
@@ -406,8 +409,10 @@ impl Engine {
                     self.log(
                         "info",
                         format!(
-                            "Replaying from slot {from_slot} to the tip at {target_slot} ({} slots)",
-                            target_slot.saturating_sub(*from_slot) + 1
+                            "Replaying from slot {} to the tip at {} ({})",
+                            grouped(*from_slot),
+                            grouped(*target_slot),
+                            plural(target_slot.saturating_sub(*from_slot) + 1, "slot")
                         ),
                         Some(id),
                     );
@@ -501,11 +506,17 @@ impl Engine {
             .or(self.highest_complete.map(|h| h + 1))
             .unwrap_or(0);
         self.blocked_from = Some(self.blocked_from.map_or(from, |b| b.min(from)));
-        self.log(
-            "error",
-            format!("Disconnected: {} ({})", d.reason, d.detail),
-            Some(id),
-        );
+        // Skip the detail when it only repeats the reason ("cut by the client (connection cut by the client)").
+        let text = if d
+            .detail
+            .to_lowercase()
+            .contains(&d.reason.to_string().to_lowercase())
+        {
+            format!("Disconnected: {}", d.detail)
+        } else {
+            format!("Disconnected: {} ({})", d.reason, d.detail)
+        };
+        self.log("error", text, Some(id));
         self.publish(d.incident).await;
     }
 
@@ -517,17 +528,17 @@ impl Engine {
         t.recovered = true;
         t.targets = incident.steps.iter().map(|s| s.target_slot).collect();
         let id = t.dto.id;
-        let gap = incident
-            .gap
-            .map_or("no slots missed".into(), |g| format!("{} slots", g.len()));
+        let gap = incident.gap.map_or("no slots missed".into(), |g| {
+            format!("a gap of {}", plural(g.len(), "slot"))
+        });
         self.log(
             "success",
             format!(
-                "Recovered after {:.1}s: gap of {gap}, {} replayed in {} step(s), {} duplicate(s) dropped",
+                "Recovered after {:.1}s: {gap}, {} replayed in {}, {} dropped",
                 incident.duration().unwrap_or_default().as_secs_f64(),
-                incident.replayed,
-                incident.steps.len(),
-                incident.duplicates
+                grouped(incident.replayed),
+                plural(incident.steps.len() as u64, "step"),
+                plural(incident.duplicates, "duplicate")
             ),
             Some(id),
         );
@@ -679,11 +690,15 @@ impl Engine {
                             self.log(
                                 "warn",
                                 format!(
-                                    "Rolling verification of slots {}..={}: {} transaction(s) missing{}",
-                                    range.first,
-                                    range.last,
-                                    report.missing.len(),
-                                    if report.repaired.is_empty() { "" } else { ", fetched from RPC" }
+                                    "Rolling verification of slots {}–{}: {} missing{}",
+                                    grouped(range.first),
+                                    grouped(range.last),
+                                    plural(report.missing.len() as u64, "transaction"),
+                                    if report.repaired.is_empty() {
+                                        ""
+                                    } else {
+                                        ", fetched from RPC"
+                                    }
                                 ),
                                 None,
                             );
@@ -710,14 +725,17 @@ impl Engine {
             Ok(report) => {
                 let summary = match &report.verdict {
                     Verdict::Complete => format!(
-                        "COMPLETE: {} of {} expected transactions delivered",
-                        report.matched, report.expected
+                        "complete, {} of {} expected transactions delivered",
+                        grouped(report.matched),
+                        grouped(report.expected)
                     ),
                     Verdict::Repaired { repaired } => {
                         format!("{repaired} missing, all fetched from RPC")
                     }
-                    Verdict::Incomplete { missing } => format!("INCOMPLETE: {missing} missing"),
-                    Verdict::Inconclusive { reason } => format!("inconclusive: {reason}"),
+                    Verdict::Incomplete { missing } => {
+                        format!("incomplete, {} missing", grouped(*missing))
+                    }
+                    Verdict::Inconclusive { reason } => format!("inconclusive ({reason})"),
                 };
                 t.dto.status = "verified";
                 t.dto.verification = Some(VerificationDto {
@@ -728,7 +746,11 @@ impl Engine {
                 });
                 format!(
                     "Verified slots {}: {summary}",
-                    range.map_or(String::new(), |r| format!("{}..={}", r.first, r.last))
+                    range.map_or(String::new(), |r| format!(
+                        "{}–{}",
+                        grouped(r.first),
+                        grouped(r.last)
+                    ))
                 )
             }
             Err(e) => {
@@ -890,5 +912,37 @@ fn extend_capped<T>(ring: &mut VecDeque<T>, items: impl Iterator<Item = T>, cap:
     ring.extend(items);
     while ring.len() > cap {
         ring.pop_front();
+    }
+}
+
+/// 450510210 → "450,510,210", for log lines people read.
+fn grouped(n: u64) -> String {
+    let digits = n.to_string();
+    let mut out = String::with_capacity(digits.len() + digits.len() / 3);
+    for (i, c) in digits.chars().enumerate() {
+        if i > 0 && (digits.len() - i).is_multiple_of(3) {
+            out.push(',');
+        }
+        out.push(c);
+    }
+    out
+}
+
+/// "1 step", "3 steps".
+fn plural(n: u64, word: &str) -> String {
+    format!("{} {word}{}", grouped(n), if n == 1 { "" } else { "s" })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn groups_and_pluralises() {
+        assert_eq!(grouped(450_510_210), "450,510,210");
+        assert_eq!(grouped(999), "999");
+        assert_eq!(grouped(1_000), "1,000");
+        assert_eq!(plural(1, "step"), "1 step");
+        assert_eq!(plural(4_436, "transaction"), "4,436 transactions");
     }
 }

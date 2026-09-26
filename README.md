@@ -83,6 +83,17 @@ curl localhost:8790/api/incidents?limit=1
 
 The API and WebSocket contract is in [`docs/api.md`](docs/api.md). `fixtures/pumpfun-150s.bin.zst` holds 150 s of real Pump.fun traffic (3.6 MB). Offline mode loops it seamlessly, with `from_slot` replay, and uses it as verification ground truth.
 
+## The console
+
+`console/` is the web UI (Vite, React, Tailwind, shadcn/ui). The direction is set in [`brand.md`](brand.md): an instrument-grade "flight recorder". Its surfaces are graphite, and the only colours are the four slot states: live, replayed, gap and verified.
+
+```bash
+cargo run -p gapless-server --release -- --offline fixtures/pumpfun-150s.bin.zst   # or live, with a key
+pnpm install && pnpm --dir console dev                                           # http://localhost:5173
+```
+
+Press ⌘K for commands, including breaking the stream on purpose.
+
 ## Phase 0 probe
 
 ```bash

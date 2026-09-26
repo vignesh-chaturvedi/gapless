@@ -1,0 +1,167 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+@import "@fontsource-variable/geist";
+@import "@fontsource-variable/geist-mono";
+
+@custom-variant dark (&:is(.dark *));
+
+/*
+ * Gapless — "flight recorder" console. See brand.md.
+ * Graphite surfaces separated by hairlines; color appears only where it means something:
+ * the four slot states (live, replay, gap, verified).
+ */
+
+@theme inline {
+  --font-sans: "Geist Variable", ui-sans-serif, system-ui, sans-serif;
+  --font-heading: var(--font-sans);
+  --font-mono: "Geist Mono Variable", ui-monospace, "SF Mono", Menlo, monospace;
+
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  /* Console-specific */
+  --color-panel: var(--panel);
+  --color-raised: var(--raised);
+  --color-hairline: var(--hairline);
+  --color-faint: var(--faint);
+  --color-live: var(--live);
+  --color-replay: var(--replay);
+  --color-gap: var(--gap);
+  --color-verified: var(--verified);
+
+  --radius-sm: calc(var(--radius) * 0.5);
+  --radius-md: calc(var(--radius) * 0.75);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.5);
+
+  --ease-crisp: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --ease-exit: cubic-bezier(0.4, 0, 1, 1);
+}
+
+/* Light: paper-white instrument, same semantics with darker state inks. */
+:root {
+  --radius: 0.5rem;
+  --background: oklch(0.975 0.003 255);
+  --foreground: oklch(0.2 0.01 255);
+  --panel: oklch(1 0 0);
+  --raised: oklch(0.985 0.002 255);
+  --card: var(--panel);
+  --card-foreground: var(--foreground);
+  --popover: oklch(1 0 0);
+  --popover-foreground: var(--foreground);
+  --primary: oklch(0.22 0.012 255);
+  --primary-foreground: oklch(0.98 0.002 255);
+  --secondary: oklch(0.945 0.005 255);
+  --secondary-foreground: var(--foreground);
+  --muted: oklch(0.945 0.005 255);
+  --muted-foreground: oklch(0.47 0.015 255);
+  --faint: oklch(0.58 0.012 255);
+  --accent: oklch(0.945 0.005 255);
+  --accent-foreground: var(--foreground);
+  --border: oklch(0.2 0.01 255 / 0.1);
+  --hairline: oklch(0.2 0.01 255 / 0.07);
+  --input: oklch(0.2 0.01 255 / 0.14);
+  --ring: oklch(0.55 0.16 258);
+  --destructive: oklch(0.55 0.2 22);
+
+  --live: oklch(0.56 0.13 160);
+  --replay: oklch(0.64 0.14 68);
+  --gap: oklch(0.56 0.2 22);
+  --verified: oklch(0.55 0.16 258);
+}
+
+/* Dark (default): graphite, soft white text, phosphor state colors. */
+.dark {
+  --background: oklch(0.155 0.006 255);
+  --foreground: oklch(0.935 0.004 255);
+  --panel: oklch(0.185 0.007 255);
+  --raised: oklch(0.215 0.008 255);
+  --card: var(--panel);
+  --card-foreground: var(--foreground);
+  --popover: oklch(0.215 0.008 255);
+  --popover-foreground: var(--foreground);
+  --primary: oklch(0.935 0.004 255);
+  --primary-foreground: oklch(0.17 0.006 255);
+  --secondary: oklch(0.245 0.008 255);
+  --secondary-foreground: var(--foreground);
+  --muted: oklch(0.245 0.008 255);
+  --muted-foreground: oklch(0.72 0.012 255);
+  --faint: oklch(0.6 0.012 255);
+  --accent: oklch(0.26 0.009 255);
+  --accent-foreground: var(--foreground);
+  --border: oklch(1 0 0 / 0.1);
+  --hairline: oklch(1 0 0 / 0.065);
+  --input: oklch(1 0 0 / 0.14);
+  --ring: oklch(0.74 0.12 255);
+  --destructive: oklch(0.68 0.19 22);
+
+  --live: oklch(0.8 0.15 162);
+  --replay: oklch(0.83 0.14 78);
+  --gap: oklch(0.69 0.19 22);
+  --verified: oklch(0.75 0.12 255);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  html {
+    color-scheme: light;
+  }
+  html.dark {
+    color-scheme: dark;
+  }
+  body {
+    @apply bg-background font-sans text-foreground antialiased;
+    font-feature-settings: "ss01", "cv11";
+  }
+  ::selection {
+    background: color-mix(in oklch, var(--verified) 30%, transparent);
+  }
+}
+
+@layer utilities {
+  /* Every number that can change: mono, tabular, no jitter. */
+  .num {
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums slashed-zero;
+    font-feature-settings: "tnum", "zero";
+  }
+  /* Instrument labels: small caps-like micro headings for panels. */
+  .label {
+    font-size: 0.6875rem;
+    line-height: 1rem;
+    font-weight: 500;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--muted-foreground);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
