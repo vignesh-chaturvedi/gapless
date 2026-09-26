@@ -1,5 +1,6 @@
 import { Outlet } from "react-router";
 
+import { IncidentDrawer } from "@/components/incident-drawer";
 import { CommandMenu } from "@/components/shell/command-menu";
 import { StatusBar } from "@/components/shell/status-bar";
 import { TopBar } from "@/components/shell/top-bar";
@@ -19,6 +20,7 @@ export function AppShell() {
       </main>
       <StatusBar />
       <CommandMenu />
+      <IncidentDrawer />
     </div>
   );
 }

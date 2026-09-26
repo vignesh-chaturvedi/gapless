@@ -9,8 +9,8 @@ use std::time::Duration;
 use fake::{Ending, FakeChain, Script, TXS_PER_SLOT, UPDATES_PER_SLOT, sig};
 use futures::StreamExt;
 use gapless::{
-    Builder, Control, Disconnect, DisconnectReason, Event, Gapless, Incident, Origin, SlotRange,
-    SlotStatus, State, Transaction,
+    Builder, Control, Disconnect, DisconnectReason, Event, Gapless, Incident, Origin, Signature,
+    SlotRange, SlotStatus, State, Transaction,
 };
 use tonic::Status;
 
@@ -21,6 +21,8 @@ const MID_SLOT_1021: usize = 20 * UPDATES_PER_SLOT + 2;
 #[derive(Default)]
 struct Run {
     txs: Vec<Transaction>,
+    /// Dropped as already delivered: (signature, slot).
+    duplicates: Vec<(Signature, u64)>,
     disconnects: Vec<Disconnect>,
     recovered: Vec<Incident>,
     states: Vec<State>,
@@ -53,6 +55,9 @@ async fn run_until(
                     run.txs.push(*tx);
                     on_tx(run.txs.len(), &control);
                 }
+                Event::Duplicate {
+                    signature, slot, ..
+                } => run.duplicates.push((signature, slot)),
                 Event::Disconnected(d) => run.disconnects.push(d),
                 Event::Recovered(i) => run.recovered.push(i),
                 Event::State(State::Stopped { reason }) => {
@@ -143,6 +148,11 @@ async fn mid_slot_kill_recovers_without_loss_or_duplicates() {
         incident.duplicates, 2,
         "the two transactions of slot 1021 seen before the kill"
     );
+    assert_eq!(
+        run.duplicates.iter().map(|d| d.1).collect::<Vec<_>>(),
+        vec![1_021, 1_021],
+        "each dropped duplicate is reported"
+    );
     assert_eq!(incident.replayed, 51 * TXS_PER_SLOT - 2);
     assert!(incident.recovered_at.is_some());
     assert!(
@@ -216,6 +226,12 @@ async fn duplicates_sent_by_the_server_are_dropped() {
     let run = run_until(chain.clone(), 3_000, 1_100, |_, _| {}).await;
     assert_exactly_once(&run, 1_001..=1_100);
     assert!(chain.duplicates_sent() >= 80);
+    assert!(run.duplicates.len() >= 80);
+    let delivered: HashSet<Signature> = run.txs.iter().map(|t| t.signature).collect();
+    assert!(
+        run.duplicates.iter().all(|(s, _)| delivered.contains(s)),
+        "only already-delivered signatures are reported as duplicates"
+    );
 }
 
 #[tokio::test(start_paused = true)]

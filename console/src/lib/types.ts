@@ -36,6 +36,8 @@ export interface SolamiConn {
   isPaygo: boolean;
   liveStreams: number;
   sampledAt: number;
+  /** Offline, the fixture source emulates Solami's buffer; nothing came from Solami. */
+  emulated: boolean;
 }
 
 export interface Controls {
@@ -48,6 +50,8 @@ export interface Controls {
 export interface Minute {
   minute: number;
   txs: number;
+  /** Of `txs`, the ones recovered by a replay or the handoff patch. */
+  replayed: number;
   trades: number;
   buys: number;
   sells: number;
@@ -67,6 +71,7 @@ export interface Launch {
 
 export interface Indexer {
   txs: number;
+  replayed: number;
   trades: number;
   buys: number;
   sells: number;
@@ -84,9 +89,13 @@ export interface Snapshot {
   program: string;
   startedAt: number;
   state: StreamState;
+  /** When the stream entered `state` (unix ms). */
+  stateSince: number;
   connId: string | null;
   metrics: Metrics;
   tip: number | null;
+  /** The finalized tip, which incident verification waits for. */
+  finalized: number | null;
   solami: SolamiConn | null;
   verifiedThrough: number | null;
   controls: Controls;
@@ -110,7 +119,8 @@ export type TxKind = "buy" | "sell" | "create" | "complete" | "other";
 export interface Tx {
   sig: string;
   slot: number;
-  origin: "live" | "replay" | "patch";
+  /** `duplicate`: a re-sent transaction Gapless dropped. */
+  origin: "live" | "replay" | "patch" | "duplicate";
   kind: TxKind;
   sol: number | null;
   mint: string | null;

@@ -17,8 +17,9 @@ Gapless runs on [Solami](https://solami.dev)'s Yellowstone gRPC. When the connec
 
 - **Resume point:** it tracks slot completeness (a slot is complete once its `SlotProcessed` arrives) and resumes from the lowest incomplete slot with `from_slot`.
 - **Deep replays:** when Solami closes a replay for backpressure, it keeps resuming from its cursor until it's live again.
-- **Duplicates:** it drops re-sent transactions by signature.
+- **Duplicates:** it drops re-sent transactions by signature, and reports each one (`Event::Duplicate`).
 - **Disconnect reasons:** it takes them from the gRPC status, or from Solami's connection history when the stream just ends.
+- **Hidden closes:** it watches Solami's live-connection list. When a slow consumer gets its stream closed for backpressure, the close can sit behind minutes of updates still buffered on the client. Gapless ends the stream as soon as Solami stops listing it, instead of draining the backlog first.
 
 ```rust
 use futures::StreamExt;
@@ -81,7 +82,7 @@ curl -X POST localhost:8790/api/chaos/kill -H 'content-type: application/json' -
 curl localhost:8790/api/incidents?limit=1
 ```
 
-The API and WebSocket contract is in [`docs/api.md`](docs/api.md). `fixtures/pumpfun-150s.bin.zst` holds 150 s of real Pump.fun traffic (3.6 MB). Offline mode loops it seamlessly, with `from_slot` replay, and uses it as verification ground truth.
+The API and WebSocket contract is in [`docs/api.md`](docs/api.md). `fixtures/pumpfun-150s.bin.zst` holds 150 s of real Pump.fun traffic (3.6 MB). Offline mode loops it seamlessly, with `from_slot` replay, and uses it as verification ground truth. It also emulates Solami's 8,192-message send buffer, so the slow-consumer scenario ends in a backpressure close offline too.
 
 ## The console
 
@@ -92,7 +93,16 @@ cargo run -p gapless-server --release -- --offline fixtures/pumpfun-150s.bin.zst
 pnpm install && pnpm --dir console dev                                           # http://localhost:5173
 ```
 
-Press ⌘K for commands, including breaking the stream on purpose.
+The Live page is built for watching an outage happen and get proven:
+
+- **Slot tape:** one bar per slot. A gap shows red, replayed slots amber, and verified slots blue. Hover to inspect a slot; click a replayed stretch to open its incident.
+- **Recovery loop:** the newest incident, stage by stage: disconnected, replayed, handoff patched, verified. It shows countdowns, replay progress and the final count, such as 13,199 / 13,199.
+- **Chaos panel:** kill the stream through Solami's API, cut it, or slow the consumer. Each needs a second press to confirm, and you can choose how long to stay offline.
+- **Solami buffer:** `buffer_pending` for our stream, with its trend and an estimate of when Solami will drop the stream.
+- **Pump.fun indexer:** exact counts through every incident. Replayed transactions are hatched in the minute they happened.
+- **Transactions:** live, replayed and patched transactions, plus the duplicates Gapless dropped. The list pauses while you hover.
+
+Press ⌘K for commands. Incident details open in a drawer (`?incident=12`) or on their own page.
 
 ## Phase 0 probe
 

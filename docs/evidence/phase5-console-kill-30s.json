@@ -1,0 +1,1347 @@
+{
+  "chaos": "killed through Solami's account API, then offline for 30s",
+  "detail": "stream terminated by user",
+  "duplicates": 13,
+  "durationMs": 37831,
+  "gap": {
+    "first": 450589320,
+    "last": 450589431
+  },
+  "id": 1,
+  "lastCompleteSlot": 450589319,
+  "naiveDoubleCounts": 13,
+  "openedAt": 1790402886001,
+  "patch": {
+    "error": null,
+    "recovered": 10,
+    "slots": {
+      "first": 450589431,
+      "last": 450589451
+    }
+  },
+  "reason": {
+    "code": "killed",
+    "text": "killed through Solami's account API"
+  },
+  "recoveredAt": 1790402923832,
+  "replayed": 3185,
+  "resumeFrom": 450589320,
+  "sessionIncident": 1,
+  "status": "verified",
+  "steps": [
+    {
+      "attempt": 1,
+      "ended": null,
+      "endedDetail": null,
+      "fromSlot": 450589320,
+      "startedAt": 1790402916166,
+      "targetSlot": 450589431,
+      "transactions": 3185
+    }
+  ],
+  "unrecoverable": null,
+  "verification": {
+    "error": null,
+    "range": {
+      "first": 450589320,
+      "last": 450589495
+    },
+    "report": {
+      "addresses": [
+        "6EF8rrecthR5Dkzon8Nwu78hRvfCKubJ14M5uBEwF6P"
+      ],
+      "delivered": 4960,
+      "elapsedMs": 6520,
+      "expected": 4960,
+      "finalizedTip": 450589497,
+      "landedElsewhere": [],
+      "matched": 4960,
+      "missing": [],
+      "orphaned": [],
+      "perSlot": [
+        {
+          "delivered": 32,
+          "expected": 32,
+          "hasBlock": true,
+          "matched": 32,
+          "slot": 450589320
+        },
+        {
+          "delivered": 26,
+          "expected": 26,
+          "hasBlock": true,
+          "matched": 26,
+          "slot": 450589321
+        },
+        {
+          "delivered": 8,
+          "expected": 8,
+          "hasBlock": true,
+          "matched": 8,
+          "slot": 450589322
+        },
+        {
+          "delivered": 18,
+          "expected": 18,
+          "hasBlock": true,
+          "matched": 18,
+          "slot": 450589323
+        },
+        {
+          "delivered": 18,
+          "expected": 18,
+          "hasBlock": true,
+          "matched": 18,
+          "slot": 450589324
+        },
+        {
+          "delivered": 23,
+          "expected": 23,
+          "hasBlock": true,
+          "matched": 23,
+          "slot": 450589325
+        },
+        {
+          "delivered": 25,
+          "expected": 25,
+          "hasBlock": true,
+          "matched": 25,
+          "slot": 450589326
+        },
+        {
+          "delivered": 21,
+          "expected": 21,
+          "hasBlock": true,
+          "matched": 21,
+          "slot": 450589327
+        },
+        {
+          "delivered": 17,
+          "expected": 17,
+          "hasBlock": true,
+          "matched": 17,
+          "slot": 450589328
+        },
+        {
+          "delivered": 19,
+          "expected": 19,
+          "hasBlock": true,
+          "matched": 19,
+          "slot": 450589329
+        },
+        {
+          "delivered": 14,
+          "expected": 14,
+          "hasBlock": true,
+          "matched": 14,
+          "slot": 450589330
+        },
+        {
+          "delivered": 23,
+          "expected": 23,
+          "hasBlock": true,
+          "matched": 23,
+          "slot": 450589331
+        },
+        {
+          "delivered": 28,
+          "expected": 28,
+          "hasBlock": true,
+          "matched": 28,
+          "slot": 450589332
+        },
+        {
+          "delivered": 53,
+          "expected": 53,
+          "hasBlock": true,
+          "matched": 53,
+          "slot": 450589333
+        },
+        {
+          "delivered": 18,
+          "expected": 18,
+          "hasBlock": true,
+          "matched": 18,
+          "slot": 450589334
+        },
+        {
+          "delivered": 36,
+          "expected": 36,
+          "hasBlock": true,
+          "matched": 36,
+          "slot": 450589335
+        },
+        {
+          "delivered": 152,
+          "expected": 152,
+          "hasBlock": true,
+          "matched": 152,
+          "slot": 450589336
+        },
+        {
+          "delivered": 76,
+          "expected": 76,
+          "hasBlock": true,
+          "matched": 76,
+          "slot": 450589337
+        },
+        {
+          "delivered": 55,
+          "expected": 55,
+          "hasBlock": true,
+          "matched": 55,
+          "slot": 450589338
+        },
+        {
+          "delivered": 41,
+          "expected": 41,
+          "hasBlock": true,
+          "matched": 41,
+          "slot": 450589339
+        },
+        {
+          "delivered": 53,
+          "expected": 53,
+          "hasBlock": true,
+          "matched": 53,
+          "slot": 450589340
+        },
+        {
+          "delivered": 65,
+          "expected": 65,
+          "hasBlock": true,
+          "matched": 65,
+          "slot": 450589341
+        },
+        {
+          "delivered": 53,
+          "expected": 53,
+          "hasBlock": true,
+          "matched": 53,
+          "slot": 450589342
+        },
+        {
+          "delivered": 26,
+          "expected": 26,
+          "hasBlock": true,
+          "matched": 26,
+          "slot": 450589343
+        },
+        {
+          "delivered": 57,
+          "expected": 57,
+          "hasBlock": true,
+          "matched": 57,
+          "slot": 450589344
+        },
+        {
+          "delivered": 63,
+          "expected": 63,
+          "hasBlock": true,
+          "matched": 63,
+          "slot": 450589345
+        },
+        {
+          "delivered": 66,
+          "expected": 66,
+          "hasBlock": true,
+          "matched": 66,
+          "slot": 450589346
+        },
+        {
+          "delivered": 44,
+          "expected": 44,
+          "hasBlock": true,
+          "matched": 44,
+          "slot": 450589347
+        },
+        {
+          "delivered": 115,
+          "expected": 115,
+          "hasBlock": true,
+          "matched": 115,
+          "slot": 450589348
+        },
+        {
+          "delivered": 60,
+          "expected": 60,
+          "hasBlock": true,
+          "matched": 60,
+          "slot": 450589349
+        },
+        {
+          "delivered": 68,
+          "expected": 68,
+          "hasBlock": true,
+          "matched": 68,
+          "slot": 450589350
+        },
+        {
+          "delivered": 75,
+          "expected": 75,
+          "hasBlock": true,
+          "matched": 75,
+          "slot": 450589351
+        },
+        {
+          "delivered": 38,
+          "expected": 38,
+          "hasBlock": true,
+          "matched": 38,
+          "slot": 450589352
+        },
+        {
+          "delivered": 39,
+          "expected": 39,
+          "hasBlock": true,
+          "matched": 39,
+          "slot": 450589353
+        },
+        {
+          "delivered": 50,
+          "expected": 50,
+          "hasBlock": true,
+          "matched": 50,
+          "slot": 450589354
+        },
+        {
+          "delivered": 87,
+          "expected": 87,
+          "hasBlock": true,
+          "matched": 87,
+          "slot": 450589355
+        },
+        {
+          "delivered": 20,
+          "expected": 20,
+          "hasBlock": true,
+          "matched": 20,
+          "slot": 450589356
+        },
+        {
+          "delivered": 37,
+          "expected": 37,
+          "hasBlock": true,
+          "matched": 37,
+          "slot": 450589357
+        },
+        {
+          "delivered": 21,
+          "expected": 21,
+          "hasBlock": true,
+          "matched": 21,
+          "slot": 450589358
+        },
+        {
+          "delivered": 19,
+          "expected": 19,
+          "hasBlock": true,
+          "matched": 19,
+          "slot": 450589359
+        },
+        {
+          "delivered": 24,
+          "expected": 24,
+          "hasBlock": true,
+          "matched": 24,
+          "slot": 450589360
+        },
+        {
+          "delivered": 22,
+          "expected": 22,
+          "hasBlock": true,
+          "matched": 22,
+          "slot": 450589361
+        },
+        {
+          "delivered": 23,
+          "expected": 23,
+          "hasBlock": true,
+          "matched": 23,
+          "slot": 450589362
+        },
+        {
+          "delivered": 32,
+          "expected": 32,
+          "hasBlock": true,
+          "matched": 32,
+          "slot": 450589363
+        },
+        {
+          "delivered": 26,
+          "expected": 26,
+          "hasBlock": true,
+          "matched": 26,
+          "slot": 450589364
+        },
+        {
+          "delivered": 21,
+          "expected": 21,
+          "hasBlock": true,
+          "matched": 21,
+          "slot": 450589365
+        },
+        {
+          "delivered": 15,
+          "expected": 15,
+          "hasBlock": true,
+          "matched": 15,
+          "slot": 450589366
+        },
+        {
+          "delivered": 15,
+          "expected": 15,
+          "hasBlock": true,
+          "matched": 15,
+          "slot": 450589367
+        },
+        {
+          "delivered": 22,
+          "expected": 22,
+          "hasBlock": true,
+          "matched": 22,
+          "slot": 450589368
+        },
+        {
+          "delivered": 14,
+          "expected": 14,
+          "hasBlock": true,
+          "matched": 14,
+          "slot": 450589369
+        },
+        {
+          "delivered": 25,
+          "expected": 25,
+          "hasBlock": true,
+          "matched": 25,
+          "slot": 450589370
+        },
+        {
+          "delivered": 30,
+          "expected": 30,
+          "hasBlock": true,
+          "matched": 30,
+          "slot": 450589371
+        },
+        {
+          "delivered": 32,
+          "expected": 32,
+          "hasBlock": true,
+          "matched": 32,
+          "slot": 450589372
+        },
+        {
+          "delivered": 18,
+          "expected": 18,
+          "hasBlock": true,
+          "matched": 18,
+          "slot": 450589373
+        },
+        {
+          "delivered": 28,
+          "expected": 28,
+          "hasBlock": true,
+          "matched": 28,
+          "slot": 450589374
+        },
+        {
+          "delivered": 29,
+          "expected": 29,
+          "hasBlock": true,
+          "matched": 29,
+          "slot": 450589375
+        },
+        {
+          "delivered": 20,
+          "expected": 20,
+          "hasBlock": true,
+          "matched": 20,
+          "slot": 450589376
+        },
+        {
+          "delivered": 10,
+          "expected": 10,
+          "hasBlock": true,
+          "matched": 10,
+          "slot": 450589377
+        },
+        {
+          "delivered": 21,
+          "expected": 21,
+          "hasBlock": true,
+          "matched": 21,
+          "slot": 450589378
+        },
+        {
+          "delivered": 17,
+          "expected": 17,
+          "hasBlock": true,
+          "matched": 17,
+          "slot": 450589379
+        },
+        {
+          "delivered": 22,
+          "expected": 22,
+          "hasBlock": true,
+          "matched": 22,
+          "slot": 450589380
+        },
+        {
+          "delivered": 23,
+          "expected": 23,
+          "hasBlock": true,
+          "matched": 23,
+          "slot": 450589381
+        },
+        {
+          "delivered": 24,
+          "expected": 24,
+          "hasBlock": true,
+          "matched": 24,
+          "slot": 450589382
+        },
+        {
+          "delivered": 17,
+          "expected": 17,
+          "hasBlock": true,
+          "matched": 17,
+          "slot": 450589383
+        },
+        {
+          "delivered": 20,
+          "expected": 20,
+          "hasBlock": true,
+          "matched": 20,
+          "slot": 450589384
+        },
+        {
+          "delivered": 14,
+          "expected": 14,
+          "hasBlock": true,
+          "matched": 14,
+          "slot": 450589385
+        },
+        {
+          "delivered": 12,
+          "expected": 12,
+          "hasBlock": true,
+          "matched": 12,
+          "slot": 450589386
+        },
+        {
+          "delivered": 8,
+          "expected": 8,
+          "hasBlock": true,
+          "matched": 8,
+          "slot": 450589387
+        },
+        {
+          "delivered": 11,
+          "expected": 11,
+          "hasBlock": true,
+          "matched": 11,
+          "slot": 450589388
+        },
+        {
+          "delivered": 15,
+          "expected": 15,
+          "hasBlock": true,
+          "matched": 15,
+          "slot": 450589389
+        },
+        {
+          "delivered": 19,
+          "expected": 19,
+          "hasBlock": true,
+          "matched": 19,
+          "slot": 450589390
+        },
+        {
+          "delivered": 34,
+          "expected": 34,
+          "hasBlock": true,
+          "matched": 34,
+          "slot": 450589391
+        },
+        {
+          "delivered": 16,
+          "expected": 16,
+          "hasBlock": true,
+          "matched": 16,
+          "slot": 450589392
+        },
+        {
+          "delivered": 18,
+          "expected": 18,
+          "hasBlock": true,
+          "matched": 18,
+          "slot": 450589393
+        },
+        {
+          "delivered": 23,
+          "expected": 23,
+          "hasBlock": true,
+          "matched": 23,
+          "slot": 450589394
+        },
+        {
+          "delivered": 15,
+          "expected": 15,
+          "hasBlock": true,
+          "matched": 15,
+          "slot": 450589395
+        },
+        {
+          "delivered": 22,
+          "expected": 22,
+          "hasBlock": true,
+          "matched": 22,
+          "slot": 450589396
+        },
+        {
+          "delivered": 27,
+          "expected": 27,
+          "hasBlock": true,
+          "matched": 27,
+          "slot": 450589397
+        },
+        {
+          "delivered": 23,
+          "expected": 23,
+          "hasBlock": true,
+          "matched": 23,
+          "slot": 450589398
+        },
+        {
+          "delivered": 21,
+          "expected": 21,
+          "hasBlock": true,
+          "matched": 21,
+          "slot": 450589399
+        },
+        {
+          "delivered": 21,
+          "expected": 21,
+          "hasBlock": true,
+          "matched": 21,
+          "slot": 450589400
+        },
+        {
+          "delivered": 17,
+          "expected": 17,
+          "hasBlock": true,
+          "matched": 17,
+          "slot": 450589401
+        },
+        {
+          "delivered": 19,
+          "expected": 19,
+          "hasBlock": true,
+          "matched": 19,
+          "slot": 450589402
+        },
+        {
+          "delivered": 14,
+          "expected": 14,
+          "hasBlock": true,
+          "matched": 14,
+          "slot": 450589403
+        },
+        {
+          "delivered": 18,
+          "expected": 18,
+          "hasBlock": true,
+          "matched": 18,
+          "slot": 450589404
+        },
+        {
+          "delivered": 14,
+          "expected": 14,
+          "hasBlock": true,
+          "matched": 14,
+          "slot": 450589405
+        },
+        {
+          "delivered": 14,
+          "expected": 14,
+          "hasBlock": true,
+          "matched": 14,
+          "slot": 450589406
+        },
+        {
+          "delivered": 19,
+          "expected": 19,
+          "hasBlock": true,
+          "matched": 19,
+          "slot": 450589407
+        },
+        {
+          "delivered": 18,
+          "expected": 18,
+          "hasBlock": true,
+          "matched": 18,
+          "slot": 450589408
+        },
+        {
+          "delivered": 17,
+          "expected": 17,
+          "hasBlock": true,
+          "matched": 17,
+          "slot": 450589409
+        },
+        {
+          "delivered": 17,
+          "expected": 17,
+          "hasBlock": true,
+          "matched": 17,
+          "slot": 450589410
+        },
+        {
+          "delivered": 31,
+          "expected": 31,
+          "hasBlock": true,
+          "matched": 31,
+          "slot": 450589411
+        },
+        {
+          "delivered": 25,
+          "expected": 25,
+          "hasBlock": true,
+          "matched": 25,
+          "slot": 450589412
+        },
+        {
+          "delivered": 13,
+          "expected": 13,
+          "hasBlock": true,
+          "matched": 13,
+          "slot": 450589413
+        },
+        {
+          "delivered": 16,
+          "expected": 16,
+          "hasBlock": true,
+          "matched": 16,
+          "slot": 450589414
+        },
+        {
+          "delivered": 31,
+          "expected": 31,
+          "hasBlock": true,
+          "matched": 31,
+          "slot": 450589415
+        },
+        {
+          "delivered": 33,
+          "expected": 33,
+          "hasBlock": true,
+          "matched": 33,
+          "slot": 450589416
+        },
+        {
+          "delivered": 14,
+          "expected": 14,
+          "hasBlock": true,
+          "matched": 14,
+          "slot": 450589417
+        },
+        {
+          "delivered": 27,
+          "expected": 27,
+          "hasBlock": true,
+          "matched": 27,
+          "slot": 450589418
+        },
+        {
+          "delivered": 13,
+          "expected": 13,
+          "hasBlock": true,
+          "matched": 13,
+          "slot": 450589419
+        },
+        {
+          "delivered": 15,
+          "expected": 15,
+          "hasBlock": true,
+          "matched": 15,
+          "slot": 450589420
+        },
+        {
+          "delivered": 6,
+          "expected": 6,
+          "hasBlock": true,
+          "matched": 6,
+          "slot": 450589421
+        },
+        {
+          "delivered": 23,
+          "expected": 23,
+          "hasBlock": true,
+          "matched": 23,
+          "slot": 450589422
+        },
+        {
+          "delivered": 12,
+          "expected": 12,
+          "hasBlock": true,
+          "matched": 12,
+          "slot": 450589423
+        },
+        {
+          "delivered": 13,
+          "expected": 13,
+          "hasBlock": true,
+          "matched": 13,
+          "slot": 450589424
+        },
+        {
+          "delivered": 15,
+          "expected": 15,
+          "hasBlock": true,
+          "matched": 15,
+          "slot": 450589425
+        },
+        {
+          "delivered": 19,
+          "expected": 19,
+          "hasBlock": true,
+          "matched": 19,
+          "slot": 450589426
+        },
+        {
+          "delivered": 31,
+          "expected": 31,
+          "hasBlock": true,
+          "matched": 31,
+          "slot": 450589427
+        },
+        {
+          "delivered": 26,
+          "expected": 26,
+          "hasBlock": true,
+          "matched": 26,
+          "slot": 450589428
+        },
+        {
+          "delivered": 23,
+          "expected": 23,
+          "hasBlock": true,
+          "matched": 23,
+          "slot": 450589429
+        },
+        {
+          "delivered": 20,
+          "expected": 20,
+          "hasBlock": true,
+          "matched": 20,
+          "slot": 450589430
+        },
+        {
+          "delivered": 17,
+          "expected": 17,
+          "hasBlock": true,
+          "matched": 17,
+          "slot": 450589431
+        },
+        {
+          "delivered": 10,
+          "expected": 10,
+          "hasBlock": true,
+          "matched": 10,
+          "slot": 450589432
+        },
+        {
+          "delivered": 25,
+          "expected": 25,
+          "hasBlock": true,
+          "matched": 25,
+          "slot": 450589433
+        },
+        {
+          "delivered": 9,
+          "expected": 9,
+          "hasBlock": true,
+          "matched": 9,
+          "slot": 450589434
+        },
+        {
+          "delivered": 12,
+          "expected": 12,
+          "hasBlock": true,
+          "matched": 12,
+          "slot": 450589435
+        },
+        {
+          "delivered": 24,
+          "expected": 24,
+          "hasBlock": true,
+          "matched": 24,
+          "slot": 450589436
+        },
+        {
+          "delivered": 10,
+          "expected": 10,
+          "hasBlock": true,
+          "matched": 10,
+          "slot": 450589437
+        },
+        {
+          "delivered": 16,
+          "expected": 16,
+          "hasBlock": true,
+          "matched": 16,
+          "slot": 450589438
+        },
+        {
+          "delivered": 15,
+          "expected": 15,
+          "hasBlock": true,
+          "matched": 15,
+          "slot": 450589439
+        },
+        {
+          "delivered": 27,
+          "expected": 27,
+          "hasBlock": true,
+          "matched": 27,
+          "slot": 450589440
+        },
+        {
+          "delivered": 12,
+          "expected": 12,
+          "hasBlock": true,
+          "matched": 12,
+          "slot": 450589441
+        },
+        {
+          "delivered": 27,
+          "expected": 27,
+          "hasBlock": true,
+          "matched": 27,
+          "slot": 450589442
+        },
+        {
+          "delivered": 14,
+          "expected": 14,
+          "hasBlock": true,
+          "matched": 14,
+          "slot": 450589443
+        },
+        {
+          "delivered": 46,
+          "expected": 46,
+          "hasBlock": true,
+          "matched": 46,
+          "slot": 450589444
+        },
+        {
+          "delivered": 41,
+          "expected": 41,
+          "hasBlock": true,
+          "matched": 41,
+          "slot": 450589445
+        },
+        {
+          "delivered": 28,
+          "expected": 28,
+          "hasBlock": true,
+          "matched": 28,
+          "slot": 450589446
+        },
+        {
+          "delivered": 33,
+          "expected": 33,
+          "hasBlock": true,
+          "matched": 33,
+          "slot": 450589447
+        },
+        {
+          "delivered": 26,
+          "expected": 26,
+          "hasBlock": true,
+          "matched": 26,
+          "slot": 450589448
+        },
+        {
+          "delivered": 53,
+          "expected": 53,
+          "hasBlock": true,
+          "matched": 53,
+          "slot": 450589449
+        },
+        {
+          "delivered": 65,
+          "expected": 65,
+          "hasBlock": true,
+          "matched": 65,
+          "slot": 450589450
+        },
+        {
+          "delivered": 68,
+          "expected": 68,
+          "hasBlock": true,
+          "matched": 68,
+          "slot": 450589451
+        },
+        {
+          "delivered": 61,
+          "expected": 61,
+          "hasBlock": true,
+          "matched": 61,
+          "slot": 450589452
+        },
+        {
+          "delivered": 52,
+          "expected": 52,
+          "hasBlock": true,
+          "matched": 52,
+          "slot": 450589453
+        },
+        {
+          "delivered": 27,
+          "expected": 27,
+          "hasBlock": true,
+          "matched": 27,
+          "slot": 450589454
+        },
+        {
+          "delivered": 19,
+          "expected": 19,
+          "hasBlock": true,
+          "matched": 19,
+          "slot": 450589455
+        },
+        {
+          "delivered": 33,
+          "expected": 33,
+          "hasBlock": true,
+          "matched": 33,
+          "slot": 450589456
+        },
+        {
+          "delivered": 24,
+          "expected": 24,
+          "hasBlock": true,
+          "matched": 24,
+          "slot": 450589457
+        },
+        {
+          "delivered": 24,
+          "expected": 24,
+          "hasBlock": true,
+          "matched": 24,
+          "slot": 450589458
+        },
+        {
+          "delivered": 49,
+          "expected": 49,
+          "hasBlock": true,
+          "matched": 49,
+          "slot": 450589459
+        },
+        {
+          "delivered": 26,
+          "expected": 26,
+          "hasBlock": true,
+          "matched": 26,
+          "slot": 450589460
+        },
+        {
+          "delivered": 38,
+          "expected": 38,
+          "hasBlock": true,
+          "matched": 38,
+          "slot": 450589461
+        },
+        {
+          "delivered": 43,
+          "expected": 43,
+          "hasBlock": true,
+          "matched": 43,
+          "slot": 450589462
+        },
+        {
+          "delivered": 18,
+          "expected": 18,
+          "hasBlock": true,
+          "matched": 18,
+          "slot": 450589463
+        },
+        {
+          "delivered": 17,
+          "expected": 17,
+          "hasBlock": true,
+          "matched": 17,
+          "slot": 450589464
+        },
+        {
+          "delivered": 45,
+          "expected": 45,
+          "hasBlock": true,
+          "matched": 45,
+          "slot": 450589465
+        },
+        {
+          "delivered": 36,
+          "expected": 36,
+          "hasBlock": true,
+          "matched": 36,
+          "slot": 450589466
+        },
+        {
+          "delivered": 32,
+          "expected": 32,
+          "hasBlock": true,
+          "matched": 32,
+          "slot": 450589467
+        },
+        {
+          "delivered": 9,
+          "expected": 9,
+          "hasBlock": true,
+          "matched": 9,
+          "slot": 450589468
+        },
+        {
+          "delivered": 30,
+          "expected": 30,
+          "hasBlock": true,
+          "matched": 30,
+          "slot": 450589469
+        },
+        {
+          "delivered": 16,
+          "expected": 16,
+          "hasBlock": true,
+          "matched": 16,
+          "slot": 450589470
+        },
+        {
+          "delivered": 30,
+          "expected": 30,
+          "hasBlock": true,
+          "matched": 30,
+          "slot": 450589471
+        },
+        {
+          "delivered": 26,
+          "expected": 26,
+          "hasBlock": true,
+          "matched": 26,
+          "slot": 450589472
+        },
+        {
+          "delivered": 12,
+          "expected": 12,
+          "hasBlock": true,
+          "matched": 12,
+          "slot": 450589473
+        },
+        {
+          "delivered": 15,
+          "expected": 15,
+          "hasBlock": true,
+          "matched": 15,
+          "slot": 450589474
+        },
+        {
+          "delivered": 9,
+          "expected": 9,
+          "hasBlock": true,
+          "matched": 9,
+          "slot": 450589475
+        },
+        {
+          "delivered": 23,
+          "expected": 23,
+          "hasBlock": true,
+          "matched": 23,
+          "slot": 450589476
+        },
+        {
+          "delivered": 33,
+          "expected": 33,
+          "hasBlock": true,
+          "matched": 33,
+          "slot": 450589477
+        },
+        {
+          "delivered": 21,
+          "expected": 21,
+          "hasBlock": true,
+          "matched": 21,
+          "slot": 450589478
+        },
+        {
+          "delivered": 34,
+          "expected": 34,
+          "hasBlock": true,
+          "matched": 34,
+          "slot": 450589479
+        },
+        {
+          "delivered": 45,
+          "expected": 45,
+          "hasBlock": true,
+          "matched": 45,
+          "slot": 450589480
+        },
+        {
+          "delivered": 67,
+          "expected": 67,
+          "hasBlock": true,
+          "matched": 67,
+          "slot": 450589481
+        },
+        {
+          "delivered": 39,
+          "expected": 39,
+          "hasBlock": true,
+          "matched": 39,
+          "slot": 450589482
+        },
+        {
+          "delivered": 44,
+          "expected": 44,
+          "hasBlock": true,
+          "matched": 44,
+          "slot": 450589483
+        },
+        {
+          "delivered": 24,
+          "expected": 24,
+          "hasBlock": true,
+          "matched": 24,
+          "slot": 450589484
+        },
+        {
+          "delivered": 12,
+          "expected": 12,
+          "hasBlock": true,
+          "matched": 12,
+          "slot": 450589485
+        },
+        {
+          "delivered": 21,
+          "expected": 21,
+          "hasBlock": true,
+          "matched": 21,
+          "slot": 450589486
+        },
+        {
+          "delivered": 27,
+          "expected": 27,
+          "hasBlock": true,
+          "matched": 27,
+          "slot": 450589487
+        },
+        {
+          "delivered": 13,
+          "expected": 13,
+          "hasBlock": true,
+          "matched": 13,
+          "slot": 450589488
+        },
+        {
+          "delivered": 16,
+          "expected": 16,
+          "hasBlock": true,
+          "matched": 16,
+          "slot": 450589489
+        },
+        {
+          "delivered": 13,
+          "expected": 13,
+          "hasBlock": true,
+          "matched": 13,
+          "slot": 450589490
+        },
+        {
+          "delivered": 12,
+          "expected": 12,
+          "hasBlock": true,
+          "matched": 12,
+          "slot": 450589491
+        },
+        {
+          "delivered": 20,
+          "expected": 20,
+          "hasBlock": true,
+          "matched": 20,
+          "slot": 450589492
+        },
+        {
+          "delivered": 13,
+          "expected": 13,
+          "hasBlock": true,
+          "matched": 13,
+          "slot": 450589493
+        },
+        {
+          "delivered": 16,
+          "expected": 16,
+          "hasBlock": true,
+          "matched": 16,
+          "slot": 450589494
+        },
+        {
+          "delivered": 17,
+          "expected": 17,
+          "hasBlock": true,
+          "matched": 17,
+          "slot": 450589495
+        }
+      ],
+      "range": {
+        "first": 450589320,
+        "last": 450589495
+      },
+      "repaired": [],
+      "rpc": {
+        "bytes": 15801718,
+        "calls": 28,
+        "retries": 0
+      },
+      "skippedSlots": 0,
+      "slotsWithBlocks": 176,
+      "source": "getTransactionsForAddress",
+      "spotChecks": [
+        {
+          "agree": true,
+          "fromBlock": 32,
+          "fromHistory": 32,
+          "hasBlock": true,
+          "onlyInBlock": [],
+          "onlyInHistory": [],
+          "slot": 450589320,
+          "viaLookupTable": 7
+        },
+        {
+          "agree": true,
+          "fromBlock": 19,
+          "fromHistory": 19,
+          "hasBlock": true,
+          "onlyInBlock": [],
+          "onlyInHistory": [],
+          "slot": 450589407,
+          "viaLookupTable": 5
+        },
+        {
+          "agree": true,
+          "fromBlock": 17,
+          "fromHistory": 17,
+          "hasBlock": true,
+          "onlyInBlock": [],
+          "onlyInHistory": [],
+          "slot": 450589495,
+          "viaLookupTable": 3
+        }
+      ],
+      "unexplained": [],
+      "verdict": {
+        "kind": "complete"
+      }
+    },
+    "status": "done"
+  }
+}

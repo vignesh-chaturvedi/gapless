@@ -113,6 +113,8 @@ pub struct SolamiConnDto {
     /// gRPC streams open on the account right now (ours, plus a handoff patch or other clients).
     pub live_streams: usize,
     pub sampled_at: u64,
+    /// Offline, the fixture source emulates Solami's buffer; nothing here came from Solami.
+    pub emulated: bool,
 }
 
 #[derive(Clone, Debug, Serialize)]
@@ -239,7 +241,7 @@ pub struct SlotCell {
 pub struct TxDto {
     pub sig: String,
     pub slot: u64,
-    /// `live`, `replay` or `patch`.
+    /// `live`, `replay`, `patch`, or `duplicate` for a re-sent transaction Gapless dropped.
     pub origin: &'static str,
     /// `buy`, `sell`, `create`, `complete` or `other`.
     pub kind: &'static str,
@@ -278,9 +280,13 @@ pub struct Snapshot {
     pub program: String,
     pub started_at: u64,
     pub state: StateDto,
+    /// When the stream entered `state`, for countdowns and "replaying for" copy.
+    pub state_since: u64,
     pub conn_id: Option<String>,
     pub metrics: MetricsDto,
     pub tip: Option<u64>,
+    /// The finalized tip, which incident verification waits for.
+    pub finalized: Option<u64>,
     pub solami: Option<SolamiConnDto>,
     pub verified_through: Option<u64>,
     pub controls: ControlsDto,

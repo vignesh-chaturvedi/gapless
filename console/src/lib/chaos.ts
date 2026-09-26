@@ -2,6 +2,9 @@ import { toast } from "sonner";
 
 import { api } from "@/lib/api";
 
+/** How slow "slow consumer" is: about 4 updates a second against Pump.fun's ~70. */
+export const SLOW_CONSUMER_MS = 250;
+
 const reason = (error: unknown) => (error instanceof Error ? error.message : String(error));
 
 /** Kill our stream through Solami's account API, optionally staying offline to open a gap. */
@@ -38,8 +41,10 @@ export async function cutStream(holdSecs?: number) {
 export async function setSlowConsumer(perUpdateMs: number | null) {
   try {
     await api.slow(perUpdateMs);
-    toast(perUpdateMs ? `Consumer slowed to ${perUpdateMs}ms per update` : "Consumer back to full speed", {
-      description: perUpdateMs ? "Watch Solami's buffer fill until it drops the stream for backpressure." : undefined,
+    toast(perUpdateMs ? `Consumer slowed to ${perUpdateMs} ms per update` : "Consumer back to full speed", {
+      description: perUpdateMs
+        ? "Watch Solami's buffer fill until it drops the stream for backpressure. Gapless restores full speed to recover."
+        : undefined,
     });
   } catch (error) {
     toast.error("Couldn't change the consumer speed", { description: reason(error) });

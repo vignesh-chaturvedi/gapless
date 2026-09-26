@@ -116,6 +116,12 @@ The Phase 0 capture, `fixtures/raw/capture-1790381350.bin`, holds 597 s of live 
 
 Reports are in `docs/evidence/`.
 
+## Later findings (Phase 5, slow consumer)
+
+- **A slow consumer hides Solami's backpressure close behind its own buffers.** At 250 ms per update (~4/s against Pump.fun's 70–180/s), `buffer_pending` stayed at 0 for the first ~45 s: the backlog was filling buffers on our side of the connection (HTTP/2 flow-control window, channels). Then Solami's buffer filled at ~90–100 messages/s and reached ~8,000 about 125 s in, and the stream left the account's live list. The client kept receiving its buffered updates and **didn't see the close for minutes**; at that rate the drain would have taken far longer than Solami's 13-minute replay horizon. After full speed was restored, the drain took ~20 s and ended in a clean end-of-stream, which the history API named `backpressure`.
+- **Listing watchdog (in `gapless`, every 3 s by default).** After identifying its stream, Gapless keeps polling the live list. Once the stream is missing from two answers in a row, Solami has closed it, so Gapless ends it immediately, resumes from the cursor and resolves the reason from history as usual. Live run: the close was detected 13 s after the buffer passed half full, the 486-slot gap replayed in two steps (the first also cut by backpressure), and the window verified **13,199 / 13,199, COMPLETE**.
+- **Solami's buffer is observable enough to warn before it drops you.** With samples every ~5 s, the console estimates the fill rate and the time left ("filling at +90/s, Solami drops the stream in about 30 s").
+
 ## Open questions for Solami (@cryptociva)
 
 - Can the Pro trial be extended through judging (Oct 28)? It currently ends Oct 2, 23:32 UTC.

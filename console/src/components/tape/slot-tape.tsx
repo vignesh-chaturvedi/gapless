@@ -1,7 +1,9 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 
+import * as fmt from "@/lib/format";
 import { liveTape, type TapeSource } from "@/lib/tape";
 import { useTheme } from "@/lib/theme";
+import type { SlotCell } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
 const PITCH = 8; // px per slot
@@ -56,11 +58,72 @@ interface SlotTapeProps {
   className?: string;
   /** Accessible summary; updated by the parent at a calm cadence. */
   label: string;
+  /** Hovering shows a slot inspector; clicking a replayed slot calls this with its incident. */
+  onSelectIncident?: (incident: number) => void;
 }
 
-export function SlotTape({ source = liveTape, height = 96, className, label }: SlotTapeProps) {
+/** The slot under the pointer, for the inspector. */
+interface Hover {
+  slot: number;
+  x: number;
+  cell: SlotCell | null;
+  /** What an empty slot means at that position. */
+  empty: "skipped" | "in-flight" | "recovering" | "gap" | null;
+}
+
+function Inspector({ hover, width }: { hover: Hover; width: number }) {
+  const { cell } = hover;
+  let state: string;
+  if (cell) {
+    const origin = cell.origin === "replay" ? "Replayed" : "Live";
+    state =
+      cell.verified === "missing"
+        ? `${origin} · verified, ${fmt.int(cell.missing)} missing`
+        : cell.verified === "repaired"
+          ? `${origin} · verified, repaired from RPC`
+          : cell.verified === "ok"
+            ? `${origin} · verified complete`
+            : `${origin} · not verified yet`;
+  } else {
+    state =
+      hover.empty === "skipped"
+        ? "No block: skipped by its leader"
+        : hover.empty === "in-flight"
+          ? "Arriving"
+          : hover.empty === "recovering"
+            ? "Missed, being replayed"
+            : "Missed while disconnected";
+  }
+  const left = Math.min(Math.max(hover.x - 96, 4), Math.max(4, width - 196));
+  return (
+    <div
+      aria-hidden="true"
+      className="pointer-events-none absolute top-2 z-10 w-48 rounded-md border border-hairline bg-popover/95 px-3 py-2 text-xs shadow-sm backdrop-blur-sm"
+      style={{ left }}
+    >
+      <p className="num font-medium text-foreground">Slot {fmt.slot(hover.slot)}</p>
+      <p className="mt-0.5 text-muted-foreground">{state}</p>
+      {cell && (
+        <p className="mt-0.5 text-muted-foreground">
+          <span className="num text-foreground">{fmt.int(cell.txs)}</span> transaction{cell.txs === 1 ? "" : "s"}
+        </p>
+      )}
+      {cell?.incident != null && cell.incident > 0 && (
+        <p className="mt-1 text-replay">
+          Incident <span className="num">#{cell.incident}</span> · click for details
+        </p>
+      )}
+    </div>
+  );
+}
+
+export function SlotTape({ source = liveTape, height = 96, className, label, onSelectIncident }: SlotTapeProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const theme = useTheme();
+  const pointer = useRef<number | null>(null);
+  const [hover, setHover] = useState<Hover | null>(null);
+  const [width, setWidth] = useState(0);
+  const interactive = Boolean(onSelectIncident);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -76,11 +139,13 @@ export function SlotTape({ source = liveTape, height = 96, className, label }: S
     let scale = 40; // tx count that fills a bar; adapts to traffic
     let shownTip: number | null = null;
     let frame = 0;
+    let hovered: string | null = null;
 
     const resize = () => {
       const rect = canvas.getBoundingClientRect();
       dpr = window.devicePixelRatio || 1;
       width = rect.width;
+      setWidth(rect.width);
       canvas.width = Math.round(rect.width * dpr);
       canvas.height = Math.round(height * dpr);
       palette = readPalette();
@@ -114,8 +179,12 @@ export function SlotTape({ source = liveTape, height = 96, className, label }: S
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
       ctx.clearRect(0, 0, width, height);
       const floor = height - 14;
-      const top = 10;
+      const top = interactive ? 20 : 10;
       const usable = floor - top;
+      // The stretch of slots each incident replayed or patched, for the brackets above the bars.
+      const runs = new Map<number, { from: number; to: number }>();
+      let next: Hover | null = null;
+      const px = pointer.current;
 
       // Baseline.
       ctx.fillStyle = palette.hairline;
@@ -127,6 +196,28 @@ export function SlotTape({ source = liveTape, height = 96, className, label }: S
         if (x < PAD_X - BAR) break;
         if (first !== null && slot < first) break;
         const cell = f.tape.get(slot);
+        const high = f.highestComplete ?? slot;
+        if (px !== null && Math.abs(px - (x + BAR / 2)) <= PITCH / 2) {
+          next = {
+            slot,
+            x: x + BAR / 2,
+            cell: cell?.complete ? cell : null,
+            empty: cell?.complete
+              ? null
+              : slot <= high
+                ? "skipped"
+                : f.stream === "live"
+                  ? "in-flight"
+                  : f.stream === "replaying"
+                    ? "recovering"
+                    : "gap",
+          };
+        }
+        if (interactive && cell?.incident != null && cell.incident > 0) {
+          const run = runs.get(cell.incident);
+          if (run) run.from = x;
+          else runs.set(cell.incident, { from: x, to: x + BAR });
+        }
 
         if (cell?.complete) {
           peak = Math.max(peak, cell.txs);
@@ -153,7 +244,6 @@ export function SlotTape({ source = liveTape, height = 96, className, label }: S
 
         // At or below the highest complete slot, a slot with no cell was skipped by its leader
         // (no block): normal, and not a gap.
-        const high = f.highestComplete ?? slot;
         if (slot <= high) {
           ctx.fillStyle = palette.faint;
           ctx.globalAlpha = 0.6;
@@ -186,6 +276,40 @@ export function SlotTape({ source = liveTape, height = 96, className, label }: S
         }
       }
 
+      // Incident brackets: which replayed stretch belongs to which outage.
+      for (const [incident, run] of runs) {
+        const w = run.to - run.from;
+        ctx.fillStyle = palette.replay;
+        ctx.globalAlpha = 0.7;
+        ctx.fillRect(run.from, 8, w, 1);
+        ctx.fillRect(run.from, 8, 1, 4);
+        ctx.fillRect(run.to - 1, 8, 1, 4);
+        ctx.globalAlpha = 1;
+        if (w > 28) {
+          const text = `#${incident}`;
+          ctx.font = "500 10px 'Geist Mono Variable', ui-monospace, monospace";
+          const tw = ctx.measureText(text).width;
+          const cx = run.from + w / 2;
+          ctx.clearRect(cx - tw / 2 - 3, 2, tw + 6, 12);
+          ctx.fillStyle = palette.replay;
+          ctx.textBaseline = "middle";
+          ctx.fillText(text, cx - tw / 2, 8.5);
+        }
+      }
+
+      // The inspector's cursor.
+      if (next) {
+        ctx.fillStyle = palette.faint;
+        ctx.globalAlpha = 0.5;
+        ctx.fillRect(Math.round(next.x) - 0.5, top - 4, 1, floor - top + 4);
+        ctx.globalAlpha = 1;
+      }
+      const key = next ? `${next.slot}:${next.cell?.verified}:${next.cell?.txs}:${next.empty}:${Math.round(next.x)}` : null;
+      if (key !== hovered) {
+        hovered = key;
+        setHover(next);
+      }
+
       // Let the bar scale follow traffic, slowly.
       if (peak > 0) scale += (Math.max(12, peak * 0.9) - scale) * 0.02;
     };
@@ -195,16 +319,34 @@ export function SlotTape({ source = liveTape, height = 96, className, label }: S
       cancelAnimationFrame(frame);
       observer.disconnect();
     };
-  }, [source, height, theme]);
+  }, [source, height, theme, interactive]);
 
+  if (!interactive) {
+    return (
+      <canvas ref={canvasRef} role="img" aria-label={label} className={cn("block w-full", className)} style={{ height }} />
+    );
+  }
+  const incident = hover?.cell?.incident;
   return (
-    <canvas
-      ref={canvasRef}
-      role="img"
-      aria-label={label}
-      className={cn("block w-full", className)}
-      style={{ height }}
-    />
+    <div className={cn("relative", className)}>
+      <canvas
+        ref={canvasRef}
+        role="img"
+        aria-label={label}
+        className={cn("block w-full", incident ? "cursor-pointer" : "cursor-crosshair")}
+        style={{ height }}
+        onPointerMove={(event) => {
+          pointer.current = event.clientX - event.currentTarget.getBoundingClientRect().left;
+        }}
+        onPointerLeave={() => {
+          pointer.current = null;
+        }}
+        onClick={() => {
+          if (incident != null && incident > 0) onSelectIncident?.(incident);
+        }}
+      />
+      {hover && <Inspector hover={hover} width={width} />}
+    </div>
   );
 }
 

@@ -149,6 +149,9 @@ pub struct Minute {
     /// Unix minute.
     pub minute: u64,
     pub txs: u64,
+    /// Of `txs`, how many arrived through a replay or the handoff patch: the ones a consumer
+    /// without Gapless would have lost.
+    pub replayed: u64,
     pub trades: u64,
     pub buys: u64,
     pub sells: u64,
@@ -172,6 +175,7 @@ pub struct Launch {
 #[serde(rename_all = "camelCase")]
 pub struct IndexerDto {
     pub txs: u64,
+    pub replayed: u64,
     pub trades: u64,
     pub buys: u64,
     pub sells: u64,
@@ -200,22 +204,34 @@ pub struct Indexer {
 }
 
 impl Indexer {
-    /// Count one delivered transaction. `fallback_secs` is used when no event carries a timestamp.
-    pub fn record(&mut self, activities: &[Activity], fallback_secs: i64) {
-        let when = activities
-            .iter()
-            .find_map(|a| match a {
-                Activity::Trade { timestamp, .. } => Some(*timestamp),
-                Activity::Create { timestamp, .. } | Activity::Complete { timestamp, .. } => {
-                    *timestamp
-                }
-            })
-            .unwrap_or(fallback_secs);
+    /// Count one delivered transaction at its events' own timestamp. `clock` is used when no
+    /// event carries one; `clock_only` ignores event timestamps (a looping fixture repeats them).
+    /// `replayed` marks a transaction recovered after an outage.
+    pub fn record(
+        &mut self,
+        activities: &[Activity],
+        clock: i64,
+        clock_only: bool,
+        replayed: bool,
+    ) {
+        let stamped = activities.iter().find_map(|a| match a {
+            Activity::Trade { timestamp, .. } => Some(*timestamp),
+            Activity::Create { timestamp, .. } | Activity::Complete { timestamp, .. } => *timestamp,
+        });
+        let when = if clock_only {
+            clock
+        } else {
+            stamped.unwrap_or(clock)
+        };
         let minute = (when.max(0) / 60) as u64;
         let bucket = self.buckets.entry(minute).or_default();
         bucket.minute.minute = minute;
         bucket.minute.txs += 1;
         self.totals.txs += 1;
+        if replayed {
+            bucket.minute.replayed += 1;
+            self.totals.replayed += 1;
+        }
         for activity in activities {
             match activity {
                 Activity::Trade {
@@ -242,8 +258,10 @@ impl Indexer {
                 } => {
                     bucket.minute.launches += 1;
                     self.totals.launches += 1;
+                    let address = bs58::encode(mint).into_string();
+                    self.launches.retain(|l| l.mint != address);
                     self.launches.push_front(Launch {
-                        mint: bs58::encode(mint).into_string(),
+                        mint: address,
                         name: name.clone(),
                         symbol: symbol.clone(),
                         at: (when.max(0) as u64) * 1000,
@@ -270,6 +288,7 @@ impl Indexer {
             .collect();
         IndexerDto {
             txs: self.totals.txs,
+            replayed: self.totals.replayed,
             trades: self.totals.trades,
             buys: self.totals.buys,
             sells: self.totals.sells,
@@ -314,7 +333,7 @@ mod tests {
                 && let Some(info) = &tx.transaction
             {
                 // Transactions without events fall back to a receive time in the same period.
-                indexer.record(&decoder.activities(info), 1_790_381_400);
+                indexer.record(&decoder.activities(info), 1_790_381_400, false, false);
             }
         }
         let s = indexer.summary();
@@ -336,11 +355,35 @@ mod tests {
     }
 
     #[test]
+    fn a_looping_fixture_can_bucket_by_its_own_clock() {
+        let launch = Activity::Create {
+            mint: [7; 32],
+            name: "Loop".into(),
+            symbol: "LOOP".into(),
+            user: [1; 32],
+            timestamp: Some(60),
+        };
+        let mut indexer = Indexer::default();
+        indexer.record(std::slice::from_ref(&launch), 600, true, false);
+        indexer.record(std::slice::from_ref(&launch), 720, true, false);
+        let s = indexer.summary();
+        assert_eq!(s.launches, 2, "both launches count");
+        assert_eq!(s.recent_launches.len(), 1, "one mint is listed once");
+        assert_eq!(s.recent_launches[0].at, 720_000, "at the playback clock");
+        assert_eq!(
+            s.minutes.iter().map(|m| m.minute).collect::<Vec<_>>(),
+            vec![10, 12],
+            "the recorded timestamp is ignored"
+        );
+    }
+
+    #[test]
     fn transactions_without_events_still_count() {
         let mut indexer = Indexer::default();
-        indexer.record(&[], 120);
+        indexer.record(&[], 120, false, false);
+        indexer.record(&[], 121, false, true);
         let s = indexer.summary();
-        assert_eq!((s.txs, s.trades), (1, 0));
-        assert_eq!(s.minutes[0].minute, 2);
+        assert_eq!((s.txs, s.trades, s.replayed), (2, 0, 1));
+        assert_eq!((s.minutes[0].minute, s.minutes[0].replayed), (2, 1));
     }
 }

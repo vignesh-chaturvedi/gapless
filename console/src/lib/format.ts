@@ -56,7 +56,8 @@ export function sol(n: number | null | undefined): string {
   if (abs < 0.0001) return "<0.0001";
   if (abs >= 10_000) return compact(n);
   const digits = abs >= 100 ? 1 : abs >= 1 ? 2 : 4;
-  return noNegativeZero(n.toFixed(digits));
+  const text = n.toLocaleString("en-US", { minimumFractionDigits: digits, maximumFractionDigits: digits });
+  return noNegativeZero(text);
 }
 
 /** Milliseconds: 46ms, 1.2s, 80s. */

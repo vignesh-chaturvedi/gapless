@@ -1,6 +1,7 @@
 use std::collections::VecDeque;
 use std::sync::{Arc, Mutex, RwLock};
 
+use gapless::fixture::FixtureSource;
 use gapless::{AccountApi, Control};
 use tokio::sync::broadcast;
 
@@ -18,6 +19,8 @@ pub struct App {
     pub control: Control,
     /// Solami's account API. `None` offline.
     pub account: Option<AccountApi>,
+    /// The fixture being played, offline. It emulates Solami's send buffer.
+    pub fixture: Option<FixtureSource>,
     pub store: Store,
     pub hub: broadcast::Sender<Arc<str>>,
     pub shared: RwLock<Shared>,

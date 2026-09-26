@@ -2,13 +2,17 @@
 
 The web console for `gapless-server`. It has:
 
-- a live slot tape
-- stream readouts, including Solami's own buffer telemetry
-- a transaction feed and activity log
-- incidents with replay, handoff patch and verification timelines
-- a command palette (⌘K) for breaking the stream on purpose
+- a live slot tape (canvas) with a hover inspector and incident brackets
+- rolling stream readouts
+- a recovery loop that follows the newest incident live: disconnected, replayed, handoff patched, verified
+- a chaos panel: kill through Solami, cut, slow consumer (each confirmed with a second press), and the handoff patch switch
+- Solami's send buffer for our stream, with its trend and time to backpressure
+- a Pump.fun indexer panel whose per-minute chart hatches the transactions recovered by replay
+- a virtualized transaction feed (live, replayed, patched and dropped duplicates) that pauses on hover, plus an activity log
+- incident details in a drawer (`?incident=<id>`) or on their own page, with a per-slot verification strip
+- a command palette (⌘K)
 
-Vite, React 19, TypeScript, Tailwind v4, shadcn/ui (Radix), zustand and TanStack Query. The design direction and tokens are in [`../brand.md`](../brand.md).
+Vite, React 19, TypeScript, Tailwind v4, shadcn/ui (Radix), Motion, zustand, TanStack Query and TanStack Virtual. The design direction and tokens are in [`../brand.md`](../brand.md).
 
 ```bash
 # 1. start the server (live needs SOLAMI_API_KEY in ../.env; --offline needs nothing)

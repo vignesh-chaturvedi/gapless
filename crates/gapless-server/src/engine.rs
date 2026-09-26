@@ -7,6 +7,7 @@ use std::sync::Arc;
 use std::time::{Duration, SystemTime};
 
 use futures::StreamExt;
+use gapless::fixture::EMULATED_BUFFER;
 use gapless::{
     Event, Events, LiveConnection, Origin, Signature, SlotRange, SlotStatus, State, Transaction,
 };
@@ -28,6 +29,8 @@ use crate::truth::Truth;
 pub const HANDOFF_SLOTS: u64 = 64;
 const ROLLING_MAX_SLOTS: u64 = 400;
 const TX_SAMPLE: usize = 40;
+/// Dropped duplicates shown in the feed per batch; the metrics count all of them.
+const DUPLICATE_SAMPLE: usize = 12;
 const INCIDENTS_SHOWN: usize = 20;
 const FINALIZATION_TIMEOUT: Duration = Duration::from_secs(240);
 
@@ -73,6 +76,7 @@ pub struct Engine {
     delivered: HashMap<Signature, u64>,
     symbols: HashMap<String, String>,
     state: StateDto,
+    state_since: u64,
     conn_id: Option<String>,
     metrics: MetricsDto,
     tip: Option<u64>,
@@ -87,6 +91,7 @@ pub struct Engine {
     rolling_running: bool,
     batch_slots: Vec<SlotCell>,
     batch_txs: Vec<TxDto>,
+    batch_duplicates: usize,
     batch_tx_count: u32,
     batch_log: Vec<LogDto>,
 }
@@ -181,6 +186,7 @@ impl Engine {
             delivered: HashMap::new(),
             symbols: HashMap::new(),
             state: StateDto::Connecting { attempt: 1 },
+            state_since: now_ms(),
             conn_id: None,
             metrics: MetricsDto::default(),
             tip: None,
@@ -194,6 +200,7 @@ impl Engine {
             rolling_running: false,
             batch_slots: Vec::new(),
             batch_txs: Vec::new(),
+            batch_duplicates: 0,
             batch_tx_count: 0,
             batch_log: Vec::new(),
         }
@@ -223,6 +230,24 @@ impl Engine {
     async fn on_event(&mut self, event: Event) {
         match event {
             Event::Transaction(tx) => self.on_transaction(*tx),
+            Event::Duplicate {
+                signature, slot, ..
+            } => {
+                if self.batch_duplicates < DUPLICATE_SAMPLE {
+                    self.batch_duplicates += 1;
+                    self.batch_txs.push(TxDto {
+                        sig: signature.to_string(),
+                        slot,
+                        origin: "duplicate",
+                        kind: "other",
+                        sol: None,
+                        mint: None,
+                        symbol: None,
+                        user: None,
+                        at: now_ms(),
+                    });
+                }
+            }
             Event::Slot {
                 slot,
                 status: SlotStatus::SlotProcessed,
@@ -325,12 +350,15 @@ impl Engine {
         };
         self.delivered.insert(tx.signature, tx.slot);
         let activities = self.decoder.activities(&tx.info);
-        let received = tx
-            .received_at
+        // Offline, the playback's own clock stands in for block time.
+        let playback = self.app.fixture.as_ref().map(|f| f.slot_time(tx.slot));
+        let clock = playback
+            .unwrap_or(tx.received_at)
             .duration_since(SystemTime::UNIX_EPOCH)
             .unwrap_or_default()
             .as_secs() as i64;
-        self.indexer.record(&activities, received);
+        self.indexer
+            .record(&activities, clock, playback.is_some(), origin != "live");
         self.ledger
             .on_transaction(tx.slot, self.incident_id(tx.origin));
         self.batch_tx_count += 1;
@@ -429,6 +457,7 @@ impl Engine {
             _ => {}
         }
         self.state = StateDto::from(&state);
+        self.state_since = now_ms();
     }
 
     async fn on_disconnect(&mut self, d: gapless::Disconnect) {
@@ -450,13 +479,17 @@ impl Engine {
             self.publish(d.incident).await;
             return;
         }
-        let chaos = self
-            .app
-            .chaos
-            .lock()
-            .expect("chaos lock")
-            .pending_label
-            .take();
+        let (chaos, throttled) = {
+            let mut chaos = self.app.chaos.lock().expect("chaos lock");
+            (
+                chaos.pending_label.take(),
+                chaos.throttle_ms.take().is_some(),
+            )
+        };
+        // A slow consumer can't replay faster than the chain moves, so recover at full speed.
+        if throttled {
+            self.app.control.throttle(None);
+        }
         let opened_at = unix_ms(d.at);
         let id = match self
             .app
@@ -517,6 +550,13 @@ impl Engine {
             format!("Disconnected: {} ({})", d.reason, d.detail)
         };
         self.log("error", text, Some(id));
+        if throttled {
+            self.log(
+                "info",
+                "Restored full consumer speed so the replay can catch up".into(),
+                Some(id),
+            );
+        }
         self.publish(d.incident).await;
     }
 
@@ -638,6 +678,7 @@ impl Engine {
                             is_paygo: c.is_paygo,
                             live_streams: count,
                             sampled_at: now_ms(),
+                            emulated: false,
                         })
                 });
             }
@@ -856,6 +897,7 @@ impl Engine {
         extend_capped(&mut shared.txs, self.batch_txs.drain(..), RECENT_TXS);
         extend_capped(&mut shared.log, self.batch_log.drain(..), RECENT_LOG);
         self.batch_slots.clear();
+        self.batch_duplicates = 0;
         self.batch_tx_count = 0;
     }
 
@@ -867,6 +909,20 @@ impl Engine {
             .map(|s| s.saturating_sub(4_000))
         {
             self.delivered.retain(|_, slot| *slot >= keep);
+        }
+        if let Some(fixture) = &self.app.fixture {
+            self.solami = Some(SolamiConnDto {
+                conn_id: "fixture".into(),
+                region: None,
+                bytes_streamed: 0,
+                throughput_bps: 0,
+                buffer_size: EMULATED_BUFFER,
+                buffer_pending: fixture.buffer_pending(),
+                is_paygo: false,
+                live_streams: 1,
+                sampled_at: now_ms(),
+                emulated: true,
+            });
         }
         let snapshot = self.snapshot();
         self.app.broadcast(&WsMessage::Tick {
@@ -891,9 +947,11 @@ impl Engine {
             program: self.app.program.clone(),
             started_at: self.started_at,
             state: self.state.clone(),
+            state_since: self.state_since,
             conn_id: self.conn_id.clone(),
             metrics: self.metrics.clone(),
             tip: self.tip,
+            finalized: self.finalized,
             solami: self.solami.clone(),
             verified_through: self.verified_through,
             controls: ControlsDto {

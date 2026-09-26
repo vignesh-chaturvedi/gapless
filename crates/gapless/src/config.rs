@@ -33,6 +33,11 @@ pub struct Config {
     pub stall_timeout: Duration,
     /// How often to ask for the chain tip while streaming.
     pub tip_interval: Duration,
+    /// While streaming, check Solami's live-connection list this often. Once our stream has left
+    /// it, Solami has closed it server-side (typically for backpressure) and whatever still
+    /// arrives is our own client buffers draining, which a slow consumer can take minutes to get
+    /// through. Gapless ends the stream there and resumes. `None` turns the check off.
+    pub watch_interval: Option<Duration>,
     /// Events buffered for the consumer before the supervisor waits on it.
     pub event_buffer: usize,
     /// Re-read the slots around each replay-to-live handoff on a second, short stream. Solami
@@ -62,6 +67,7 @@ impl Config {
             replay_horizon: REPLAY_HORIZON,
             stall_timeout: Duration::from_secs(30),
             tip_interval: Duration::from_secs(2),
+            watch_interval: Some(Duration::from_secs(3)),
             event_buffer: 16_384,
             handoff_patch: true,
             handoff_patch_slots: 20,
@@ -193,6 +199,12 @@ impl Builder {
 
     pub fn stall_timeout(mut self, timeout: Duration) -> Self {
         self.config.stall_timeout = timeout;
+        self
+    }
+
+    /// How often to check that Solami still lists our stream (every 3 s by default); `None` off.
+    pub fn watch_interval(mut self, every: Option<Duration>) -> Self {
+        self.config.watch_interval = every;
         self
     }
 

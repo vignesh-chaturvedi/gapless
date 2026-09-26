@@ -13,7 +13,7 @@ import {
   CommandSeparator,
   CommandShortcut,
 } from "@/components/ui/command";
-import { cutStream, killStream, setHandoffPatch, setSlowConsumer } from "@/lib/chaos";
+import { SLOW_CONSUMER_MS, cutStream, killStream, setHandoffPatch, setSlowConsumer } from "@/lib/chaos";
 import { useCommandMenu } from "@/lib/command-menu";
 import { useFeed } from "@/lib/feed";
 import { toggleTheme, useTheme } from "@/lib/theme";
@@ -83,7 +83,7 @@ export function CommandMenu() {
             <Scissors aria-hidden="true" />
             Cut the connection from our side, stay offline 30s
           </CommandItem>
-          <CommandItem onSelect={() => run(() => setSlowConsumer(controls?.throttleMs ? null : 5))}>
+          <CommandItem onSelect={() => run(() => setSlowConsumer(controls?.throttleMs ? null : SLOW_CONSUMER_MS))}>
             <Snail aria-hidden="true" />
             {controls?.throttleMs ? "Restore full consumer speed" : "Slow the consumer until Solami pushes back"}
           </CommandItem>

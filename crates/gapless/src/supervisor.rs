@@ -251,6 +251,9 @@ struct Supervisor {
     conn: Arc<Mutex<Conn>>,
     resolved_tx: mpsc::UnboundedSender<Resolution>,
     resolved_rx: mpsc::UnboundedReceiver<Resolution>,
+    /// Generations whose stream Solami stopped listing: closed server-side.
+    gone_tx: mpsc::UnboundedSender<u64>,
+    gone_rx: mpsc::UnboundedReceiver<u64>,
     pending_patch: Option<PendingPatch>,
     patch_tx: mpsc::UnboundedSender<PatchMsg>,
     patch_rx: mpsc::UnboundedReceiver<PatchMsg>,
@@ -272,6 +275,7 @@ impl Supervisor {
         } = gapless;
         let (resolved_tx, resolved_rx) = mpsc::unbounded_channel();
         let (patch_tx, patch_rx) = mpsc::unbounded_channel();
+        let (gone_tx, gone_rx) = mpsc::unbounded_channel();
         Self {
             cursor: SlotCursor::new(config.commitment),
             dedup: DedupWindow::new(config.replay_horizon + DEDUP_MARGIN),
@@ -291,6 +295,8 @@ impl Supervisor {
             conn: Arc::new(Mutex::new(Conn::default())),
             resolved_tx,
             resolved_rx,
+            gone_tx,
+            gone_rx,
             pending_patch: None,
             patch_tx,
             patch_rx,
@@ -485,6 +491,12 @@ impl Supervisor {
                         return Ended::ConsumerGone;
                     }
                 }
+                Some(generation) = self.gone_rx.recv() => {
+                    if generation == self.conn.lock().expect("conn lock").generation {
+                        let detail = "Solami no longer lists our stream; the rest was still buffered on our side";
+                        return Ended::Disconnected(DisconnectReason::ServerClosed, detail.into());
+                    }
+                }
                 _ = metrics.tick() => {
                     if !self.emit_metrics().await {
                         return Ended::ConsumerGone;
@@ -562,7 +574,13 @@ impl Supervisor {
             if let Some(incident) = self.incident.as_mut() {
                 incident.duplicates += 1;
             }
-            return true;
+            return self
+                .emit(Event::Duplicate {
+                    signature,
+                    slot,
+                    origin,
+                })
+                .await;
         }
         self.stats.delivered += 1;
         self.stats.window_txs += 1;
@@ -963,7 +981,8 @@ impl Supervisor {
     }
 
     /// Solami doesn't return a connection id on subscribe, so find ours as the new entry in the
-    /// live-connection list.
+    /// live-connection list. Then keep watching the list: once our stream leaves it, Solami has
+    /// closed it, whatever our client still has buffered.
     fn spawn_identify(&self, generation: u64, before: Option<HashSet<String>>) {
         let (Some(account), Some(before)) = (self.account.clone(), before) else {
             return;
@@ -971,6 +990,7 @@ impl Supervisor {
         let conn = self.conn.clone();
         let events = self.events.downgrade();
         let opened = conn.lock().expect("conn lock").connected_at;
+        let (watch, gone) = (self.config.watch_interval, self.gone_tx.clone());
         tokio::spawn(async move {
             for wait_ms in [300, 700, 1_500, 3_000] {
                 sleep(Duration::from_millis(wait_ms)).await;
@@ -997,13 +1017,47 @@ impl Supervisor {
                 if let Some(tx) = events.upgrade() {
                     let _ = tx
                         .send(Event::ConnectionIdentified {
-                            conn_id: ours.conn_id,
+                            conn_id: ours.conn_id.clone(),
                         })
                         .await;
+                }
+                if let Some(every) = watch {
+                    watch_listing(account, conn, generation, ours.conn_id, every, gone).await;
                 }
                 return;
             }
         });
+    }
+}
+
+/// Poll the live list until our stream is missing from two answers in a row, then report its
+/// generation. Stops quietly once the supervisor has moved on to another connection.
+async fn watch_listing(
+    account: AccountApi,
+    conn: Arc<Mutex<Conn>>,
+    generation: u64,
+    conn_id: String,
+    every: Duration,
+    gone: mpsc::UnboundedSender<u64>,
+) {
+    let mut misses = 0;
+    loop {
+        sleep(every).await;
+        if conn.lock().expect("conn lock").generation != generation || gone.is_closed() {
+            return;
+        }
+        let Ok(live) = account.live().await else {
+            continue;
+        };
+        if live.iter().any(|c| c.conn_id == conn_id) {
+            misses = 0;
+            continue;
+        }
+        misses += 1;
+        if misses >= 2 {
+            let _ = gone.send(generation);
+            return;
+        }
     }
 }
 

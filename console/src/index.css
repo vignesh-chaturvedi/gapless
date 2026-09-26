@@ -155,6 +155,26 @@
   }
 }
 
+/* A confirm button's arming window draining away. */
+@keyframes drain {
+  from {
+    transform: scaleX(1);
+  }
+  to {
+    transform: scaleX(0);
+  }
+}
+
+/* Indeterminate progress: a hatch sliding along a bar while we wait on the chain. */
+@keyframes hatch-slide {
+  from {
+    background-position: 0 0;
+  }
+  to {
+    background-position: 16px 0;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

@@ -60,6 +60,7 @@ The server pushes JSON messages tagged by `type`. A client that falls behind rec
   "program": "6EF8rrecthR5Dkzon8Nwu78hRvfCKubJ14M5uBEwF6P",
   "startedAt": 1790389638000,          // unix ms
   "state": { "kind": "live" },         // State
+  "stateSince": 1790389640000,         // unix ms the stream entered `state` (countdowns, "replaying for")
   "connId": "XMRwUb6crecD",            // our stream, as Solami's account API names it
   "metrics": {
     "updatesPerSec": 96.0, "txPerSec": 71.0, "highestComplete": 450540423, "tip": 450540423,
@@ -67,9 +68,11 @@ The server pushes JSON messages tagged by `type`. A client that falls behind rec
     "latencyMs": 75.0, "dedupEntries": 2064
   },
   "tip": 450540423,                    // processed tip, polled every second (also during outages)
-  "solami": {                          // null offline
+  "finalized": 450540391,              // finalized tip, which incident verification waits for
+  "solami": {                          // our stream in Solami's account API; null until identified
     "connId": "XMRwUb6crecD", "region": "ams", "bytesStreamed": 9340000, "throughputBps": 481731,
-    "bufferSize": 8192, "bufferPending": 0, "isPaygo": false, "liveStreams": 1, "sampledAt": 1790389660000
+    "bufferSize": 8192, "bufferPending": 0, "isPaygo": false, "liveStreams": 1, "sampledAt": 1790389660000,
+    "emulated": false                  // offline: the fixture source's emulated buffer, not Solami
   },
   "verifiedThrough": 450540358,        // rolling verification has checked every slot up to here
   "controls": { "handoffPatch": true, "throttleMs": null, "holdSecs": null, "canKill": true },
@@ -108,7 +111,8 @@ Tagged by `kind`:
 ```jsonc
 {
   "sig": "3Epr…Z1", "slot": 450509958,
-  "origin": "live",          // "replay", or "patch" for transactions the handoff patch recovered
+  "origin": "live",          // "replay", "patch" (recovered by the handoff patch), or "duplicate"
+                             // for a re-sent transaction Gapless dropped (sampled, up to 12 per batch)
   "kind": "buy",             // "sell", "create", "complete" (bonding curve done) or "other"
   "sol": 0.0886, "mint": "Fovb…pump", "symbol": "IBZ", "user": "1krn…KAJ",
   "at": 1790389394900
@@ -117,13 +121,13 @@ Tagged by `kind`:
 
 ### Indexer
 
-The sample consumer: Pump.fun's Anchor events (`TradeEvent`, `CreateEvent`, `CompleteEvent`), bucketed by minute using each event's own timestamp.
+The sample consumer: Pump.fun's Anchor events (`TradeEvent`, `CreateEvent`, `CompleteEvent`), bucketed by minute using each event's own timestamp (offline, the fixture playback's clock, since a looping recording repeats its timestamps). `replayed` counts transactions that arrived through a replay or the handoff patch.
 
 ```jsonc
 {
-  "txs": 1525, "trades": 485, "buys": 256, "sells": 229, "buySol": 86.7, "sellSol": 79.0,
+  "txs": 1525, "replayed": 312, "trades": 485, "buys": 256, "sells": 229, "buySol": 86.7, "sellSol": 79.0,
   "uniqueTraders": 309, "launches": 6, "graduations": 0,
-  "minutes": [ { "minute": 29839689, "txs": 612, "trades": 201, "buys": 110, "sells": 91,
+  "minutes": [ { "minute": 29839689, "txs": 612, "replayed": 312, "trades": 201, "buys": 110, "sells": 91,
                  "buySol": 35.2, "sellSol": 30.1, "traders": 150, "launches": 3, "graduations": 0 } ],
   "recentLaunches": [ { "mint": "DQF9…pump", "name": "MONEYY", "symbol": "MONY", "at": 1790381351000 } ]
 }

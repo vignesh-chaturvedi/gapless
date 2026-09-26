@@ -33,7 +33,8 @@ export function ActivityLog({ limit = 60 }: { limit?: number }) {
               <>
                 {" "}
                 <Link
-                  to={`/incidents/${line.incident}`}
+                  to={{ search: `?incident=${line.incident}` }}
+                  aria-label={`Incident ${line.incident} details`}
                   className="num rounded-sm text-xs text-muted-foreground underline-offset-2 hover:text-foreground hover:underline focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
                 >
                   #{line.incident}

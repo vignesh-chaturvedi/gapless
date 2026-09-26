@@ -137,7 +137,7 @@ async fn main() -> anyhow::Result<()> {
                 m.delivered,
                 m.duplicates,
             ),
-            Event::Slot { .. } => {}
+            Event::Slot { .. } | Event::Duplicate { .. } => {}
         }
     }
     println!(

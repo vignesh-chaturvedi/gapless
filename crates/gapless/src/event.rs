@@ -167,6 +167,13 @@ pub struct Metrics {
 #[derive(Clone, Debug)]
 pub enum Event {
     Transaction(Box<Transaction>),
+    /// Solami sent a transaction again (typically the overlap after a resume) and Gapless
+    /// dropped it, because it had already been delivered.
+    Duplicate {
+        signature: Signature,
+        slot: u64,
+        origin: Origin,
+    },
     Slot {
         slot: u64,
         status: SlotStatus,

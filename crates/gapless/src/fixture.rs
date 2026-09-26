@@ -9,7 +9,8 @@
 use std::io::Write;
 use std::path::Path;
 use std::sync::Arc;
-use std::time::Duration;
+use std::sync::atomic::{AtomicU64, Ordering};
+use std::time::{Duration, SystemTime};
 
 use futures::future::BoxFuture;
 use futures::stream;
@@ -25,6 +26,13 @@ use crate::event::{Signature, SlotRange};
 use crate::source::{Source, UpdateStream};
 
 const ZSTD_MAGIC: [u8; 4] = [0x28, 0xb5, 0x2f, 0xfd];
+
+/// Solami's default per-stream send buffer, in messages. [`FixtureSource`] emulates it: once a
+/// stream has caught up with the live edge, frames that are due but not yet read count as
+/// pending, and a stream that falls this far behind is closed for backpressure, as Solami does.
+pub const EMULATED_BUFFER: u64 = 8_192;
+/// A stream within this many frames of the live edge has caught up.
+const CAUGHT_UP: u64 = 64;
 
 /// One recorded update.
 #[derive(Clone, Debug)]
@@ -270,6 +278,27 @@ fn relabel(signature: &mut [u8], k: u64) {
 pub struct FixtureSource {
     fixture: Arc<Fixture>,
     started: Instant,
+    /// Wall-clock time of `started`, for [`FixtureSource::slot_time`].
+    started_at: SystemTime,
+    pending: Arc<AtomicU64>,
+}
+
+/// One subscription's read position.
+struct Playback {
+    source: FixtureSource,
+    k: u64,
+    index: usize,
+    caught_up: bool,
+    closed: bool,
+}
+
+impl Drop for Playback {
+    fn drop(&mut self) {
+        // Only a stream that reached the live edge reports into the buffer.
+        if self.caught_up {
+            self.source.pending.store(0, Ordering::Relaxed);
+        }
+    }
 }
 
 impl FixtureSource {
@@ -277,7 +306,26 @@ impl FixtureSource {
         Self {
             fixture: Arc::new(fixture),
             started: Instant::now(),
+            started_at: SystemTime::now(),
+            pending: Arc::new(AtomicU64::new(0)),
         }
+    }
+
+    /// When the playback produced `slot`: the fixture's stand-in for block time. A recording's
+    /// own event timestamps repeat on every loop, so consumers that bucket by time use this.
+    pub fn slot_time(&self, slot: u64) -> SystemTime {
+        let (k, index) = self.fixture.locate(slot);
+        let offset = self
+            .fixture
+            .frames
+            .get(index)
+            .map_or(Duration::ZERO, |f| f.offset);
+        self.started_at + self.fixture.duration * k as u32 + offset
+    }
+
+    /// Messages waiting in the emulated send buffer of the stream at the live edge.
+    pub fn buffer_pending(&self) -> u64 {
+        self.pending.load(Ordering::Relaxed)
     }
 
     pub fn fixture(&self) -> &Arc<Fixture> {
@@ -332,20 +380,48 @@ impl Source for FixtureSource {
                 }
                 None => (now_k, now_index),
             };
-            let stream = stream::unfold((this, k, index), |(this, mut k, mut index)| async move {
-                let fixture = this.fixture.clone();
-                let due = fixture.duration * k as u32 + fixture.frames[index].offset;
-                let elapsed = this.started.elapsed();
+            let playback = Playback {
+                source: this,
+                k,
+                index,
+                caught_up: false,
+                closed: false,
+            };
+            let stream = stream::unfold(playback, |mut p| async move {
+                if p.closed {
+                    return None;
+                }
+                let fixture = p.source.fixture.clone();
+                let due = fixture.duration * p.k as u32 + fixture.frames[p.index].offset;
+                let elapsed = p.source.started.elapsed();
                 if due > elapsed {
                     tokio::time::sleep(due - elapsed).await;
                 }
-                let update = fixture.frame_in_loop(index, k);
-                index += 1;
-                if index == fixture.frames.len() {
-                    index = 0;
-                    k += 1;
+                // Frames already due that this consumer hasn't read: Solami's `buffer_pending`.
+                let len = fixture.frames.len() as u64;
+                let (now_k, now_index) = p.source.now();
+                let backlog =
+                    (now_k * len + now_index as u64).saturating_sub(p.k * len + p.index as u64);
+                if backlog <= CAUGHT_UP {
+                    p.caught_up = true;
                 }
-                Some((Ok(update), (this, k, index)))
+                if p.caught_up {
+                    p.source.pending.store(backlog, Ordering::Relaxed);
+                    if backlog > EMULATED_BUFFER {
+                        p.closed = true;
+                        let status = Status::resource_exhausted(
+                            "stream backpressure: client too slow, please reconnect",
+                        );
+                        return Some((Err(status), p));
+                    }
+                }
+                let update = fixture.frame_in_loop(p.index, p.k);
+                p.index += 1;
+                if p.index == fixture.frames.len() {
+                    p.index = 0;
+                    p.k += 1;
+                }
+                Some((Ok(update), p))
             });
             Ok(Box::pin(stream) as UpdateStream)
         })
@@ -474,5 +550,32 @@ mod tests {
             vec![101, 102, 103],
             "history arrives without waiting"
         );
+    }
+    #[tokio::test(start_paused = true)]
+    async fn a_slow_reader_fills_the_emulated_buffer_and_is_closed() {
+        let frames = (0..10_000u64)
+            .map(|i| Frame {
+                offset: Duration::from_millis(i),
+                update: processed(100 + i),
+            })
+            .collect();
+        let source = FixtureSource::new(Fixture::from_frames(frames).unwrap());
+        let mut stream = source.subscribe(SubscribeRequest::default()).await.unwrap();
+        stream.next().await.unwrap().unwrap();
+        assert!(source.buffer_pending() <= CAUGHT_UP);
+
+        // Stop reading for 5 s: 5,000 frames come due.
+        tokio::time::advance(Duration::from_millis(5_000)).await;
+        stream.next().await.unwrap().unwrap();
+        let pending = source.buffer_pending();
+        assert!((4_900..=5_100).contains(&pending), "{pending} pending");
+
+        // Past 8,192 the stream is closed for backpressure, as Solami does.
+        tokio::time::advance(Duration::from_millis(4_000)).await;
+        let error = stream.next().await.unwrap().unwrap_err();
+        assert_eq!(error.code(), tonic::Code::ResourceExhausted);
+        assert!(stream.next().await.is_none());
+        drop(stream);
+        assert_eq!(source.buffer_pending(), 0);
     }
 }

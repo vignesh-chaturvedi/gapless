@@ -68,10 +68,11 @@ async fn main() -> Result<()> {
     };
     let program = var("GAPLESS_PROGRAM").unwrap_or_else(|| PUMP_FUN.to_owned());
 
-    let (gapless, truth, account, mode): (
+    let (gapless, truth, account, fixture, mode): (
         Gapless,
         Arc<dyn Truth>,
         Option<AccountApi>,
+        Option<FixtureSource>,
         &'static str,
     ) = match &cli.offline {
         Some(path) => {
@@ -89,7 +90,13 @@ async fn main() -> Result<()> {
                 .account_api(None)
                 .into_config()?;
             let truth = FixtureTruth::new(source.clone(), program.clone());
-            (Gapless::with_source(config, source), truth, None, "offline")
+            (
+                Gapless::with_source(config, source.clone()),
+                truth,
+                None,
+                Some(source),
+                "offline",
+            )
         }
         None => {
             let key = var("SOLAMI_API_KEY")
@@ -108,6 +115,7 @@ async fn main() -> Result<()> {
                 Gapless::new(config)?,
                 truth,
                 Some(AccountApi::new(api_url, &key)),
+                None,
                 "live",
             )
         }
@@ -122,9 +130,11 @@ async fn main() -> Result<()> {
         program: program.clone(),
         started_at: now_ms(),
         state: StateDto::Connecting { attempt: 1 },
+        state_since: now_ms(),
         conn_id: None,
         metrics: MetricsDto::default(),
         tip: None,
+        finalized: None,
         solami: None,
         verified_through: None,
         controls: ControlsDto {
@@ -147,6 +157,7 @@ async fn main() -> Result<()> {
         program,
         control,
         account,
+        fixture,
         store,
         hub,
         shared: RwLock::new(Shared {
