@@ -35,6 +35,15 @@ pub struct Config {
     pub tip_interval: Duration,
     /// Events buffered for the consumer before the supervisor waits on it.
     pub event_buffer: usize,
+    /// Re-read the slots around each replay-to-live handoff on a second, short stream. Solami
+    /// can drop the start of the slot that's executing when a resumed stream switches to the
+    /// live feed; Phase 2 verification found it 7-8 slots after the replay target.
+    pub handoff_patch: bool,
+    /// Slots after the replay target that the patch re-reads.
+    pub handoff_patch_slots: u64,
+    /// Start the patch once the stream is this many slots past the replay target, so the patched
+    /// slots are settled history (and the patch's own handoff falls outside them).
+    pub handoff_patch_after: u64,
     pub backoff: BackoffConfig,
 }
 
@@ -54,6 +63,9 @@ impl Config {
             stall_timeout: Duration::from_secs(30),
             tip_interval: Duration::from_secs(2),
             event_buffer: 16_384,
+            handoff_patch: true,
+            handoff_patch_slots: 20,
+            handoff_patch_after: 32,
             backoff: BackoffConfig::default(),
         }
     }
@@ -170,6 +182,12 @@ impl Builder {
 
     pub fn replay_horizon(mut self, slots: u64) -> Self {
         self.config.replay_horizon = slots;
+        self
+    }
+
+    /// Turn the replay-to-live handoff patch on or off (on by default).
+    pub fn handoff_patch(mut self, on: bool) -> Self {
+        self.config.handoff_patch = on;
         self
     }
 

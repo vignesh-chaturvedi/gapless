@@ -50,13 +50,21 @@ pub struct Transaction {
 }
 
 /// An inclusive range of slots.
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
 pub struct SlotRange {
     pub first: u64,
     pub last: u64,
 }
 
 impl SlotRange {
+    pub fn new(first: u64, last: u64) -> Self {
+        Self { first, last }
+    }
+
+    pub fn contains(&self, slot: u64) -> bool {
+        (self.first..=self.last).contains(&slot)
+    }
+
     pub fn len(&self) -> u64 {
         self.last.saturating_sub(self.first) + 1
     }
@@ -179,5 +187,13 @@ pub enum Event {
         reason: DisconnectReason,
     },
     Recovered(Incident),
+    /// The handoff patch re-read `slots` after an incident's replay and delivered `recovered`
+    /// transactions the resumed stream had dropped.
+    HandoffPatched {
+        incident: u64,
+        slots: SlotRange,
+        recovered: u64,
+        error: Option<String>,
+    },
     Metrics(Metrics),
 }

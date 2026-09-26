@@ -44,6 +44,24 @@ GAPLESS_HOLD_SECS=60 cargo run -p gapless --example tail --release
 
 `GAPLESS_HOLD_SECS` keeps the client offline that long after the drop, so the kill becomes a real outage to replay.
 
+## Verification (`gapless-verify`)
+
+`crates/gapless-verify` rebuilds what a filter *should* have delivered for a slot range and compares it with what the stream *did* deliver:
+
+- **Expected set:** Solami's `getTransactionsForAddress` with `filters: { slot: { gte, lte }, status: "succeeded" }`.
+- **Independent check:** a few full blocks from `getBlock`, with our own filter applied, including lookup-table addresses.
+- **Differences:** every one is classified as missing, orphaned (a dead fork), landed in another slot, or unexplained. Missing transactions carry their block position and likely cause, and can be repaired with `getTransaction`.
+
+```bash
+# stream 2 minutes, kill the stream after 20 s, stay offline 60 s, recover, then verify twice
+cargo run -p gapless-verify --release -- run --secs 120 --kill-after 20 --hold 60 --out report.json
+
+# check the two ground truths against each other, slot by slot
+cargo run -p gapless-verify --release -- sources --slots 20
+```
+
+Verification found that Solami drops the start of the slot where a resumed stream switches from replay to live. Gapless now re-reads those slots on a short second stream (the "handoff patch") and delivers what was dropped. The before and after reports are in [`docs/evidence/`](docs/evidence/).
+
 ## Phase 0 probe
 
 ```bash

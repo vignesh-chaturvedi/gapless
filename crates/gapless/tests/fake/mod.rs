@@ -46,6 +46,9 @@ pub struct Script {
     pub outage_after: u64,
     pub reject: Option<Status>,
     pub duplicate_every: Option<usize>,
+    /// On a `from_slot` subscription, drop this many transactions from the start of the first
+    /// slot past the tip: the slot executing when Solami switches the stream to the live feed.
+    pub handoff_loss: usize,
 }
 
 impl Default for Script {
@@ -56,6 +59,7 @@ impl Default for Script {
             outage_after: 0,
             reject: None,
             duplicate_every: None,
+            handoff_loss: 0,
         }
     }
 }
@@ -155,7 +159,7 @@ impl Source for FakeChain {
     ) -> BoxFuture<'static, Result<UpdateStream, Status>> {
         let chain = self.0.clone();
         Box::pin(async move {
-            let (start, script) = {
+            let (start, script, handoff_slot) = {
                 let mut s = chain.lock().unwrap();
                 let script = s.scripts.pop_front().unwrap_or_default();
                 s.from_slots.push(request.from_slot);
@@ -170,10 +174,13 @@ impl Source for FakeChain {
                         "from_slot is older than the replay horizon",
                     ));
                 }
-                (request.from_slot.unwrap_or(s.tip + 1), script)
+                let handoff_slot = request.from_slot.map(|_| s.tip + 1);
+                (request.from_slot.unwrap_or(s.tip + 1), script, handoff_slot)
             };
 
             let producer = chain.clone();
+            let loss = script.handoff_loss;
+            let mut lost = 0usize;
             let mut txs_sent = 0usize;
             let dup_every = script.duplicate_every;
             let counter = chain.clone();
@@ -184,6 +191,18 @@ impl Source for FakeChain {
                         state.tip = state.tip.max(s);
                     }
                     stream::iter(slot_updates(s))
+                })
+                .filter(move |u| {
+                    let drop = match (&u.update_oneof, handoff_slot) {
+                        (Some(UpdateOneof::Transaction(t)), Some(h))
+                            if t.slot == h && lost < loss =>
+                        {
+                            lost += 1;
+                            true
+                        }
+                        _ => false,
+                    };
+                    futures::future::ready(!drop)
                 })
                 .flat_map(move |u| {
                     let is_tx = matches!(u.update_oneof, Some(UpdateOneof::Transaction(_)));

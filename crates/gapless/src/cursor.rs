@@ -77,6 +77,11 @@ impl SlotCursor {
             .or(self.highest_complete.map(|s| s + 1))
     }
 
+    /// The slot status that marks a slot complete at this commitment.
+    pub fn completes_on(&self) -> SlotStatus {
+        self.complete_on
+    }
+
     pub fn highest_complete(&self) -> Option<u64> {
         self.highest_complete
     }

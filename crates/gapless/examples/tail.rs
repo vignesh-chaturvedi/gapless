@@ -113,6 +113,20 @@ async fn main() -> anyhow::Result<()> {
                         .unwrap_or_default()
                 );
             }
+            Event::HandoffPatched {
+                incident,
+                slots,
+                recovered,
+                error,
+            } => println!(
+                "{} incident #{incident}: handoff patch re-read slots {}..={} and recovered {recovered} dropped transaction(s){}",
+                at(),
+                slots.first,
+                slots.last,
+                error
+                    .map(|e| format!(" (patch error: {e})"))
+                    .unwrap_or_default()
+            ),
             Event::Metrics(m) => println!(
                 "{} {:>4.0} tx/s  slot {}  lag {}  latency {}  delivered {}  dropped dupes {}  consumer repeats {repeats}",
                 at(),

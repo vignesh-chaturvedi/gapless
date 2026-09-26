@@ -1,4 +1,4 @@
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 use std::pin::Pin;
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::{Arc, Mutex};
@@ -180,6 +180,26 @@ struct HistoryLookup {
     before: HashSet<String>,
 }
 
+/// A handoff patch waiting for the stream to move far enough past the replay target.
+struct PendingPatch {
+    incident: u64,
+    slots: SlotRange,
+    start_after: u64,
+}
+
+enum PatchMsg {
+    Tx {
+        incident: u64,
+        slot: u64,
+        info: Box<SubscribeUpdateTransactionInfo>,
+    },
+    Done {
+        incident: u64,
+        slots: SlotRange,
+        error: Option<String>,
+    },
+}
+
 /// A disconnect reason learned after the fact.
 struct Resolution {
     incident: u64,
@@ -225,6 +245,10 @@ struct Supervisor {
     conn: Arc<Mutex<Conn>>,
     resolved_tx: mpsc::UnboundedSender<Resolution>,
     resolved_rx: mpsc::UnboundedReceiver<Resolution>,
+    pending_patch: Option<PendingPatch>,
+    patch_tx: mpsc::UnboundedSender<PatchMsg>,
+    patch_rx: mpsc::UnboundedReceiver<PatchMsg>,
+    patched: HashMap<u64, u64>,
     stats: Stats,
     window_start: Instant,
 }
@@ -241,6 +265,7 @@ impl Supervisor {
             account,
         } = gapless;
         let (resolved_tx, resolved_rx) = mpsc::unbounded_channel();
+        let (patch_tx, patch_rx) = mpsc::unbounded_channel();
         Self {
             cursor: SlotCursor::new(config.commitment),
             dedup: DedupWindow::new(config.replay_horizon + DEDUP_MARGIN),
@@ -260,6 +285,10 @@ impl Supervisor {
             conn: Arc::new(Mutex::new(Conn::default())),
             resolved_tx,
             resolved_rx,
+            pending_patch: None,
+            patch_tx,
+            patch_rx,
+            patched: HashMap::new(),
             stats: Stats::default(),
             window_start: Instant::now(),
         }
@@ -444,6 +473,11 @@ impl Supervisor {
                         return Ended::ConsumerGone;
                     }
                 }
+                Some(msg) = self.patch_rx.recv() => {
+                    if !self.on_patch(msg).await {
+                        return Ended::ConsumerGone;
+                    }
+                }
                 _ = metrics.tick() => {
                     if !self.emit_metrics().await {
                         return Ended::ConsumerGone;
@@ -584,12 +618,122 @@ impl Supervisor {
         if caught_up {
             return self.finish_recovery().await;
         }
+        let due = self.pending_patch.as_ref().is_some_and(|p| {
+            self.cursor
+                .highest_complete()
+                .is_some_and(|h| h >= p.start_after)
+        });
+        if due && let Some(patch) = self.pending_patch.take() {
+            self.spawn_patch(patch);
+        }
         true
+    }
+
+    /// Re-read the slots around a replay-to-live handoff on a second, short subscription and
+    /// forward their transactions; dedup lets only the ones the resumed stream dropped through.
+    fn spawn_patch(&self, patch: PendingPatch) {
+        let source = self.source.clone();
+        let request = self.request(Some(patch.slots.first));
+        let complete_on = self.cursor.completes_on();
+        let tx = self.patch_tx.clone();
+        let PendingPatch {
+            incident, slots, ..
+        } = patch;
+        tokio::spawn(async move {
+            let run = async {
+                let mut stream = source.subscribe(request).await?;
+                while let Some(item) = stream.next().await {
+                    match item?.update_oneof {
+                        Some(UpdateOneof::Transaction(t)) if slots.contains(t.slot) => {
+                            let Some(info) = t.transaction else { continue };
+                            let msg = PatchMsg::Tx {
+                                incident,
+                                slot: t.slot,
+                                info: Box::new(info),
+                            };
+                            if tx.send(msg).is_err() {
+                                return Ok(());
+                            }
+                        }
+                        Some(UpdateOneof::Slot(s))
+                            if s.status() == complete_on && s.slot >= slots.last =>
+                        {
+                            return Ok(());
+                        }
+                        _ => {}
+                    }
+                }
+                Err(tonic::Status::unavailable("patch stream ended early"))
+            };
+            let error = match tokio::time::timeout(Duration::from_secs(30), run).await {
+                Ok(Ok(())) => None,
+                Ok(Err(status)) => Some(status.message().to_owned()),
+                Err(_) => Some("timed out".to_owned()),
+            };
+            let _ = tx.send(PatchMsg::Done {
+                incident,
+                slots,
+                error,
+            });
+        });
+    }
+
+    async fn on_patch(&mut self, msg: PatchMsg) -> bool {
+        match msg {
+            PatchMsg::Tx {
+                incident,
+                slot,
+                info,
+            } => {
+                let info = *info;
+                let Some(signature) = Signature::from_bytes(&info.signature) else {
+                    return true;
+                };
+                if !self.dedup.insert(signature, slot) {
+                    return true;
+                }
+                self.stats.delivered += 1;
+                *self.patched.entry(incident).or_default() += 1;
+                let tx = Transaction {
+                    slot,
+                    signature,
+                    index: info.index,
+                    origin: Origin::Replay { incident },
+                    received_at: SystemTime::now(),
+                    created_at: None,
+                    info,
+                };
+                self.emit(Event::Transaction(Box::new(tx))).await
+            }
+            PatchMsg::Done {
+                incident,
+                slots,
+                error,
+            } => {
+                let recovered = self.patched.remove(&incident).unwrap_or(0);
+                self.emit(Event::HandoffPatched {
+                    incident,
+                    slots,
+                    recovered,
+                    error,
+                })
+                .await
+            }
+        }
     }
 
     /// Close the open incident (if any) and report that we're live.
     async fn finish_recovery(&mut self) -> bool {
-        self.replay = None;
+        if let Some(replay) = self.replay.take()
+            && self.config.handoff_patch
+        {
+            let c = &self.config;
+            self.pending_patch = Some(PendingPatch {
+                incident: replay.incident,
+                slots: SlotRange::new(replay.target, replay.target + c.handoff_patch_slots),
+                start_after: replay.target + c.handoff_patch_after,
+            });
+        }
         self.backoff.reset();
         if let Some(mut incident) = self.incident.take() {
             incident.recovered_at = Some(SystemTime::now());
@@ -740,6 +884,11 @@ impl Supervisor {
                 },
                 Some(resolution) = self.resolved_rx.recv() => {
                     if !self.apply_resolution(resolution).await {
+                        return false;
+                    }
+                }
+                Some(msg) = self.patch_rx.recv() => {
+                    if !self.on_patch(msg).await {
                         return false;
                     }
                 }

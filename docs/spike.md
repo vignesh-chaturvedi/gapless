@@ -100,9 +100,26 @@ The Phase 0 capture, `fixtures/raw/capture-1790381350.bin`, holds 597 s of live 
 - **Deep replay on mainnet:** a 150 s outage (553–561 slots) recovered in 2–3 steps, each getting 250–350 slots before Solami's backpressure cut. Catch-up ran at ~2,300–2,600 tx/s. Across five live runs the consumer saw **0 repeated transactions** (19–21k replayed per deep run).
 - **Solami's gRPC also answers `GetSlot`** (~155 ms, processed/confirmed/finalized) and `GetVersion` (Yellowstone 15.2.1). Gapless uses `GetSlot` for replay targets and lag.
 
+## Later findings (Phase 2, verification)
+
+- **Two ground truths agree.** `getTransactionsForAddress` (slot and status filters) and our own filter applied to full `getBlock` results matched on **20 of 20 consecutive slots**: 541 transactions each, 80 of them only through lookup tables.
+- **Solami drops transactions at the replay-to-live handoff.** After a `from_slot` resume catches up, the slot executing when Solami attaches the live feed loses the transactions that ran before the attach. This showed up in two kill-and-replay runs:
+
+  | Run | Replay target | Handoff slot | Delivered / expected in that slot | Missing |
+  |---|---|---|---|---|
+  | 1 | 450531860 | 450531868 (+8) | 6 / 10 | block positions 183–283; delivered ones were at 500–559 |
+  | 2 | 450532762 | 450532769 (+7) | 1 / 13 | the earliest transactions |
+
+  A pure live run over the same period missed **nothing** (12,300 / 12,300), and the replayed gaps themselves were complete. `getBlock` confirms the missing transactions are in the block and match the filter. From inside the stream nothing looks wrong: the slot still ends with `SlotProcessed`. Only verification catches it.
+- **Handoff patch (in `gapless`, on by default).** Once the stream is 32 slots past the replay target, Gapless opens a short second subscription from the target, re-reads 20 slots, and lets dedup pass only what was dropped. Live result: the patch recovered 14 transactions, and the 428-slot window verified **9,571 / 9,571, COMPLETE**, identical on two passes. It uses the Pro plan's second gRPC stream for a few seconds.
+- **Verification cost** for a ~430-slot window: ~60 RPC calls, 12–23 MB, 5–11 s (mostly the `getBlock` spot checks). No rate limiting was hit.
+
+Reports are in `docs/evidence/`.
+
 ## Open questions for Solami (@cryptociva)
 
 - Can the Pro trial be extended through judging (Oct 28)? It currently ends Oct 2, 23:32 UTC.
 - Does PAYG gRPC work on the Free plan?
 - A backpressure disconnect reaches the client as a clean end-of-stream, while the docs say `RESOURCE_EXHAUSTED`. Is that intended?
 - The replay horizon is 3,000 slots rather than the documented 3,500.
+- A resumed stream drops the start of the slot that's executing when it switches from replay to the live feed (see Phase 2 above).

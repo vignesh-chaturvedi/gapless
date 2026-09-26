@@ -798,6 +798,24 @@ dependencies = [
 ]
 
 [[package]]
+name = "gapless-verify"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "bs58",
+ "clap",
+ "dotenvy",
+ "fastrand",
+ "futures",
+ "gapless",
+ "reqwest",
+ "serde",
+ "serde_json",
+ "thiserror",
+ "tokio",
+]
+
+[[package]]
 name = "generic-array"
 version = "0.14.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"

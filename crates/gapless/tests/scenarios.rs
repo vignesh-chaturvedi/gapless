@@ -125,7 +125,11 @@ async fn mid_slot_kill_recovers_without_loss_or_duplicates() {
         Some(1_021),
         "resume from the slot cut mid-stream, not after it"
     );
-    assert_eq!(chain.requested_from_slots(), vec![None, Some(1_021)]);
+    // The last request is the handoff patch, re-reading from the replay target.
+    assert_eq!(
+        chain.requested_from_slots(),
+        vec![None, Some(1_021), Some(1_071)]
+    );
 
     let incident = &run.recovered[0];
     assert_eq!(
@@ -168,7 +172,15 @@ async fn deep_replay_steps_through_backpressure_closes() {
     assert_exactly_once(&run, 1_001..=1_500);
     assert_eq!(
         chain.requested_from_slots(),
-        vec![None, Some(1_021), Some(1_121), Some(1_221), Some(1_321)]
+        vec![
+            None,
+            Some(1_021),
+            Some(1_121),
+            Some(1_221),
+            Some(1_321),
+            Some(1_421)
+        ],
+        "four replay steps, then the handoff patch from the final target"
     );
     assert_eq!(
         run.recovered.len(),
@@ -215,7 +227,10 @@ async fn outage_beyond_the_horizon_reports_the_lost_slots() {
     );
     let run = run_until(chain.clone(), 100, 1_400, |_, _| {}).await;
 
-    assert_eq!(chain.requested_from_slots(), vec![None, Some(1_221)]);
+    assert_eq!(
+        chain.requested_from_slots(),
+        vec![None, Some(1_221), Some(1_321)]
+    );
     let incident = &run.recovered[0];
     assert_eq!(
         incident.unrecoverable,
@@ -267,7 +282,10 @@ async fn stalled_stream_is_replaced() {
     );
     let run = run_until(chain.clone(), 3_000, 1_150, |_, _| {}).await;
     assert_eq!(run.disconnects[0].reason, DisconnectReason::Stalled);
-    assert_eq!(chain.requested_from_slots(), vec![None, Some(1_021)]);
+    assert_eq!(
+        chain.requested_from_slots(),
+        vec![None, Some(1_021), Some(1_041)]
+    );
     assert_exactly_once(&run, 1_001..=1_150);
 }
 
@@ -313,5 +331,95 @@ async fn hold_delays_the_outage_but_not_replay_steps() {
         delays[1] < Duration::from_secs(1),
         "the replay step retries at once: {:?}",
         delays[1]
+    );
+}
+
+fn handoff_scripts() -> Vec<Script> {
+    vec![
+        Script::cut(MID_SLOT_1021, Ending::Killed, 50),
+        // The resumed stream loses the first three transactions of slot 1072, the first slot
+        // past the tip when it switched to live.
+        Script {
+            handoff_loss: 3,
+            ..Script::default()
+        },
+    ]
+}
+
+#[tokio::test(start_paused = true)]
+async fn handoff_patch_recovers_what_the_live_switch_dropped() {
+    let chain = FakeChain::new(TIP, 3_000, handoff_scripts());
+    let (mut events, control) = Gapless::with_source(config(3_000), chain.clone()).start();
+    let mut run = Run::default();
+    let mut patched = None;
+    while let Some(event) = events.next().await {
+        match event {
+            Event::Transaction(tx) => run.txs.push(*tx),
+            Event::HandoffPatched {
+                slots,
+                recovered,
+                error,
+                ..
+            } => {
+                patched = Some((slots, recovered, error));
+            }
+            Event::Slot {
+                slot,
+                status: SlotStatus::SlotProcessed,
+                origin: Origin::Live,
+            } if slot >= 1_200 && patched.is_some() => break,
+            _ => {}
+        }
+    }
+    control.stop();
+    let (slots, recovered, error) = patched.expect("the patch ran");
+    assert_eq!(
+        slots,
+        SlotRange {
+            first: 1_071,
+            last: 1_091
+        }
+    );
+    assert_eq!(recovered, 3);
+    assert_eq!(error, None);
+    assert_eq!(
+        chain.requested_from_slots(),
+        vec![None, Some(1_021), Some(1_071)]
+    );
+    assert_exactly_once(&run, 1_001..=1_200);
+}
+
+#[tokio::test(start_paused = true)]
+async fn without_the_patch_the_handoff_loss_stays_missing() {
+    let chain = FakeChain::new(TIP, 3_000, handoff_scripts());
+    let config = Builder::new("test-key")
+        .program("Prog1111111111111111111111111111111111111")
+        .account_api(None)
+        .handoff_patch(false)
+        .into_config()
+        .unwrap();
+    let (mut events, control) = Gapless::with_source(config, chain).start();
+    let mut delivered = HashSet::new();
+    while let Some(event) = events.next().await {
+        match event {
+            Event::Transaction(tx) => {
+                delivered.insert(tx.signature.0);
+            }
+            Event::Slot {
+                slot,
+                status: SlotStatus::SlotProcessed,
+                origin: Origin::Live,
+            } if slot >= 1_200 => break,
+            _ => {}
+        }
+    }
+    control.stop();
+    let lost: Vec<u64> = (0..TXS_PER_SLOT)
+        .filter(|i| !delivered.contains(&sig(1_072, *i)))
+        .collect();
+    assert_eq!(
+        lost,
+        vec![0, 1, 2],
+        "the first three transactions of the handoff slot"
     );
 }
