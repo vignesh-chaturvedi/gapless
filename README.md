@@ -4,7 +4,7 @@ Prove your Solana stream didn't miss a thing.
 
 Gapless runs on [Solami](https://solami.dev)'s Yellowstone gRPC. When the connection drops, it replays the missed slots with `from_slot`, removes duplicate transactions, and checks the recovered window against RPC `getBlock` to show nothing was lost.
 
-> Work in progress. The build plan is in [`docs/plan.html`](docs/plan.html); Phase 0 findings are in [`docs/spike.md`](docs/spike.md).
+> Work in progress. Findings about Solami's stream behaviour are in [`docs/spike.md`](docs/spike.md); verification evidence is in [`docs/evidence/`](docs/evidence/).
 
 ## Prerequisites
 
