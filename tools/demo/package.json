@@ -1,0 +1,9 @@
+{
+  "name": "gapless-demo",
+  "private": true,
+  "type": "module",
+  "description": "Films the Gapless demo against a live gapless-server",
+  "dependencies": {
+    "puppeteer-core": "^24.0.0"
+  }
+}

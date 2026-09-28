@@ -5,6 +5,8 @@
 [![CI](https://github.com/vignesh-chaturvedi/gapless/actions/workflows/ci.yml/badge.svg)](https://github.com/vignesh-chaturvedi/gapless/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
+**[▶ Watch the 3-minute demo](https://youtu.be/LKObcNlrob0)**: three outages, live on Solana mainnet. With the handoff patch off, Solami dropped 12 transactions and only verification caught them.
+
 ![A live kill on Solana mainnet: the stream goes down, the gap is replayed, the handoff is patched, and the recovered window verifies 2,668 of 2,668 against RPC](docs/media/recovery-loop.gif)
 
 Gapless is a Rust library, server and live console for [Solami](https://solami.dev)'s Yellowstone gRPC stream. When the stream drops, Gapless:
@@ -234,6 +236,7 @@ flowchart LR
 | `scripts/` | Chaos scenarios and the soak monitor |
 | `fixtures/` | 150 s of recorded mainnet Pump.fun traffic (3.6 MB) |
 | `tools/probe` | The Phase 0 probe used to measure Solami's behaviour |
+| `tools/demo` | Films the demo on the live console with headless Chrome ([`docs/demo.md`](docs/demo.md)) |
 
 ## What we found about Solami
 

@@ -715,6 +715,17 @@ impl Engine {
                 });
             }
             Job::IncidentFinalized { incident, range } => {
+                // Finalized on chain isn't enough: a consumer running behind (a slow machine, a
+                // long replay) may not have delivered the end of the range yet, and checking
+                // now would count late transactions as missing. Wait for the stream too.
+                if self.highest_complete.is_none_or(|h| h < range.last) {
+                    let jobs = self.jobs.clone();
+                    tokio::spawn(async move {
+                        sleep(Duration::from_secs(2)).await;
+                        let _ = jobs.send(Job::IncidentFinalized { incident, range });
+                    });
+                    return;
+                }
                 let Some(t) = self.tracked.get_mut(&incident) else {
                     return;
                 };

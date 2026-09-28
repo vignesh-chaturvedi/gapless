@@ -58,6 +58,9 @@ export function StatusBar() {
         ) : null}
         <Item term="Mode">{snapshot?.mode === "offline" ? "offline fixture" : snapshot ? "mainnet" : fmt.NONE}</Item>
         <Item term="Up">{snapshot ? fmt.duration(now - snapshot.startedAt) : fmt.NONE}</Item>
+        <Item term="UTC" title="Wall clock">
+          {new Date(now).toISOString().slice(11, 19)}
+        </Item>
       </dl>
     </footer>
   );

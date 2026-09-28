@@ -22,6 +22,13 @@ while let Some(event) = events.next().await {
     }
 }`;
 
+const REPO = "https://github.com/vignesh-chaturvedi/gapless";
+
+const GET = [
+  { comment: "Clone and run the console (no key: recorded mainnet; add SOLAMI_API_KEY to .env for live)", cmd: `git clone ${REPO} && cd gapless && docker compose up` },
+  { comment: "Add the library to your Cargo.toml", cmd: `gapless = { git = "${REPO}" }` },
+];
+
 const COMMANDS = [
   { comment: "Watch a stream recover (kill it from Solami's dashboard while it runs)", cmd: "GAPLESS_HOLD_SECS=60 cargo run -p gapless --example tail --release" },
   { comment: "Stream, kill, replay, then verify everything against RPC", cmd: "cargo run -p gapless-verify --release -- run --secs 120 --kill-after 20 --hold 60" },
@@ -69,6 +76,31 @@ export function Integrate() {
           and your own bot or indexer and you get each transaction once, even across disconnects.
         </p>
       </div>
+
+      <Panel
+        title="Get it"
+        aside={
+          <a
+            href={REPO}
+            target="_blank"
+            rel="noreferrer"
+            className="num rounded-sm text-foreground underline-offset-2 hover:underline focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+          >
+            github.com/vignesh-chaturvedi/gapless
+          </a>
+        }
+        bodyClassName="divide-y divide-hairline"
+      >
+        {GET.map((c) => (
+          <div key={c.cmd} className="flex items-start justify-between gap-4 px-4 py-3">
+            <div className="min-w-0">
+              <p className="text-sm text-muted-foreground">{c.comment}</p>
+              <code className="num mt-1 block overflow-x-auto text-[13px] whitespace-nowrap">{c.cmd}</code>
+            </div>
+            <CopyButton text={c.cmd} label={`Copy: ${c.cmd}`} />
+          </div>
+        ))}
+      </Panel>
 
       <Panel title="In your code" aside={<CopyButton text={RUST} label="Copy the Rust example" />}>
         <pre className="num overflow-x-auto px-4 py-4 text-[13px] leading-relaxed">

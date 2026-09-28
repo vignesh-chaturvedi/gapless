@@ -173,6 +173,28 @@ function stages(incident: Incident, snapshot: Snapshot, now: number, slotMs: num
   let verify: Stage;
   if (!v) {
     verify = { key: "verify", title: "Verified", tone: "verified", state: "pending", progress: null, detail: "Checked against RPC once the slots finalize." };
+  } else if (
+    v.status === "pending" &&
+    v.range &&
+    snapshot.finalized != null &&
+    snapshot.finalized >= v.range.last &&
+    (high ?? 0) < v.range.last
+  ) {
+    // Final on chain, but our own stream hasn't delivered the end of the range yet.
+    verify = {
+      key: "verify",
+      title: "Waiting for the stream",
+      tone: "verified",
+      state: "active",
+      progress: "wait",
+      detail: (
+        <>
+          Slot <Num>{fmt.slot(v.range.last)}</Num> is final; the stream is{" "}
+          <Num>{fmt.int(v.range.last - (high ?? v.range.first))}</Num> slots short of it. Checking before it arrives
+          would count late transactions as missing.
+        </>
+      ),
+    };
   } else if (v.status === "pending" && v.range) {
     const finalized = snapshot.finalized;
     const left = finalized != null ? Math.max(0, v.range.last - finalized) : null;
