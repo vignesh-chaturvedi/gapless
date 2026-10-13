@@ -64,7 +64,7 @@ To follow a different program, set `GAPLESS_PROGRAM` in `.env`. The console's in
 
 ### Host it
 
-The image runs anywhere that runs containers (Render, Fly.io, a VPS). Set `SOLAMI_API_KEY` as a secret and `GAPLESS_PUBLIC=1`, which makes it safe to share the URL: outages are rationed to one every 5 minutes for everyone, offline time is capped at 30 s, and the slow consumer and the patch switch are off. The container listens on `$PORT` when the host sets one, otherwise 8790. Health check: `/api/health`.
+The image runs anywhere that runs containers (Render, Fly.io, a VPS). Set `SOLAMI_API_KEY` as a secret and `GAPLESS_PUBLIC=1`, which makes it safe to share the URL: outages are rationed to one every 5 minutes for everyone, offline time is capped at 30 s, and the slow consumer and the patch switch are off. The container listens on `$PORT` when the host sets one, otherwise 8790. Health check: `/api/health`. Without a key (or with one whose plan has no gRPC) it plays the recorded fixture instead, and every page says it's a recorded replay, not live.
 
 ### Without Docker
 

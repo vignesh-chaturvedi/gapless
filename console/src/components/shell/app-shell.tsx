@@ -2,6 +2,7 @@ import { Outlet } from "react-router";
 
 import { IncidentDrawer } from "@/components/incident-drawer";
 import { CommandMenu } from "@/components/shell/command-menu";
+import { ReplayBanner } from "@/components/shell/replay-banner";
 import { StatusBar } from "@/components/shell/status-bar";
 import { TopBar } from "@/components/shell/top-bar";
 
@@ -15,6 +16,7 @@ export function AppShell() {
         Skip to content
       </a>
       <TopBar />
+      <ReplayBanner />
       <main id="main" className="flex-1">
         <Outlet />
       </main>

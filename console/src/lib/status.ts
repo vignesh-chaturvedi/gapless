@@ -25,7 +25,7 @@ export function streamStatus(link: Link, snapshot: Snapshot | null): StreamStatu
     case "live":
       return {
         tone: "live",
-        label: "Live",
+        label: snapshot.mode === "offline" ? "Recorded" : "Live",
         detail:
           snapshot.mode === "offline"
             ? "Playing the recorded mainnet fixture, every slot accounted for"

@@ -3,6 +3,7 @@ import { useMemo } from "react";
 import { Link } from "react-router";
 
 import { Wordmark } from "@/components/brand/mark";
+import { ReplayBanner } from "@/components/shell/replay-banner";
 import { ThemeToggle } from "@/components/shell/top-bar";
 import { StreamPill } from "@/components/stream-pill";
 import { SlotTape, TapeLegend } from "@/components/tape/slot-tape";
@@ -93,6 +94,7 @@ export function Landing() {
           </div>
         </div>
       </header>
+      <ReplayBanner />
 
       <main className="flex-1">
         <section className="mx-auto max-w-6xl px-4 pt-16 pb-10 lg:px-6 lg:pt-24">
@@ -111,7 +113,7 @@ export function Landing() {
           <div className="mt-8 flex flex-wrap items-center gap-3">
             <Button asChild size="lg" className="h-10 px-4">
               <Link to="/live">
-                Open the live console
+                {snapshot?.mode === "offline" ? "Open the console" : "Open the live console"}
                 <ArrowRight aria-hidden="true" />
               </Link>
             </Button>
