@@ -282,6 +282,12 @@ pub struct ControlsDto {
     pub throttle_ms: Option<u64>,
     pub hold_secs: Option<u64>,
     pub can_kill: bool,
+    /// A hosted demo: one outage per cooldown, holds capped, slow consumer and patch switch off.
+    pub public: bool,
+    /// Public demo: when the next kill or cut is allowed (unix ms).
+    pub next_outage_at: Option<u64>,
+    /// Public demo: the longest a visitor can keep the stream offline.
+    pub max_hold_secs: Option<u64>,
 }
 
 /// Everything the console needs to draw its first frame.

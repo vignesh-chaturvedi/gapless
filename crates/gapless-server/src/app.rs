@@ -15,6 +15,8 @@ pub const TAPE_SLOTS: usize = 600;
 /// State shared between the engine (writer), the HTTP handlers and WebSocket clients.
 pub struct App {
     pub mode: &'static str,
+    /// A hosted demo anyone can open: outages are rationed (see `api::PUBLIC_COOLDOWN_SECS`).
+    pub public: bool,
     pub program: String,
     /// Slots back that a `from_slot` replay can reach.
     pub replay_horizon: u64,
@@ -45,6 +47,8 @@ pub struct Chaos {
     pub handoff_patch: bool,
     pub throttle_ms: Option<u64>,
     pub hold_secs: Option<u64>,
+    /// Public demo: when the next kill or cut is allowed (unix ms).
+    pub next_outage_at: Option<u64>,
     /// Consumed by the next incident that opens.
     pub pending_label: Option<String>,
 }

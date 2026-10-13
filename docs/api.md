@@ -38,6 +38,8 @@ In **offline** mode the server plays a recorded mainnet fixture in a loop. It su
 
 `kill` answers `{ ok, method: "kill", connId, killed }`, or `409` if our Solami connection isn't identified yet. The hold is released automatically when the incident recovers.
 
+On a public demo (`--public`), `kill` and `cut` share one cooldown: one outage every 5 minutes, site-wide, answered with `429` until it's over, and `holdSecs` is capped at 30. `slow` and `patch` answer `403`. The snapshot's `controls` carry `public`, `nextOutageAt` (unix ms) and `maxHoldSecs`.
+
 ## WebSocket `/ws`
 
 The server pushes JSON messages tagged by `type`. A client that falls behind receives a fresh `hello` instead of the messages it missed.

@@ -17,6 +17,12 @@ use tower_http::cors::CorsLayer;
 use tower_http::services::{ServeDir, ServeFile};
 
 use crate::app::App;
+use crate::dto::now_ms;
+
+/// Public demo: one kill or cut per this long, site-wide.
+pub const PUBLIC_COOLDOWN_SECS: u64 = 300;
+/// Public demo: the longest a visitor can keep the stream offline.
+pub const PUBLIC_MAX_HOLD_SECS: u64 = 30;
 
 /// The API, plus the built console when `console` points at it (`console/dist`). Unknown paths
 /// fall back to its `index.html`, so deep links like `/incidents/3` load the app.
@@ -101,6 +107,53 @@ fn set_hold(app: &App, hold_secs: Option<u64>, label: String) {
     app.control.hold(chaos.hold_secs.map(Duration::from_secs));
 }
 
+/// Public demo: claim the next outage, or say how long until one is allowed. Claiming and
+/// checking happen under one lock, so two visitors can't both get through.
+fn claim_outage(app: &App) -> Option<Response> {
+    if !app.public {
+        return None;
+    }
+    let mut chaos = app.chaos.lock().expect("chaos lock");
+    let now = now_ms();
+    match outage_wait(chaos.next_outage_at, now) {
+        0 => {
+            chaos.next_outage_at = Some(now + PUBLIC_COOLDOWN_SECS * 1000);
+            None
+        }
+        wait => Some(error(
+            StatusCode::TOO_MANY_REQUESTS,
+            format!(
+                "this public demo allows one outage every {} minutes; the next is in {}s",
+                PUBLIC_COOLDOWN_SECS / 60,
+                wait.div_ceil(1000)
+            ),
+        )),
+    }
+}
+
+/// Milliseconds until the next outage is allowed (0: now).
+fn outage_wait(next_at: Option<u64>, now: u64) -> u64 {
+    next_at.map_or(0, |at| at.saturating_sub(now))
+}
+
+/// Public demo: holds are capped so a visitor can't keep the stream down.
+fn capped_hold(app: &App, hold_secs: Option<u64>) -> Option<u64> {
+    if app.public {
+        hold_secs.map(|s| s.min(PUBLIC_MAX_HOLD_SECS))
+    } else {
+        hold_secs
+    }
+}
+
+fn public_off(app: &App, what: &str) -> Option<Response> {
+    app.public.then(|| {
+        error(
+            StatusCode::FORBIDDEN,
+            format!("{what} is off on this public demo; run Gapless locally to try it"),
+        )
+    })
+}
+
 fn outage_label(what: &str, hold_secs: Option<u64>) -> String {
     match hold_secs.filter(|s| *s > 0) {
         Some(s) => format!("{what}, then offline for {s}s"),
@@ -110,7 +163,8 @@ fn outage_label(what: &str, hold_secs: Option<u64>) -> String {
 
 /// Kill our stream through Solami's account API. Offline, this falls back to a client cut.
 async fn kill(State(app): AppState, body: Option<Json<Outage>>) -> Response {
-    let Json(outage) = body.unwrap_or_default();
+    let Json(mut outage) = body.unwrap_or_default();
+    outage.hold_secs = capped_hold(&app, outage.hold_secs);
     let conn_id = app
         .shared
         .read()
@@ -119,6 +173,9 @@ async fn kill(State(app): AppState, body: Option<Json<Outage>>) -> Response {
         .conn_id
         .clone();
     let Some(account) = app.account.clone() else {
+        if let Some(response) = claim_outage(&app) {
+            return response;
+        }
         set_hold(
             &app,
             outage.hold_secs,
@@ -133,6 +190,9 @@ async fn kill(State(app): AppState, body: Option<Json<Outage>>) -> Response {
             "our Solami connection isn't identified yet",
         );
     };
+    if let Some(response) = claim_outage(&app) {
+        return response;
+    }
     set_hold(
         &app,
         outage.hold_secs,
@@ -144,7 +204,12 @@ async fn kill(State(app): AppState, body: Option<Json<Outage>>) -> Response {
                 .into_response()
         }
         Err(e) => {
-            app.chaos.lock().expect("chaos lock").pending_label = None;
+            let mut chaos = app.chaos.lock().expect("chaos lock");
+            chaos.pending_label = None;
+            if app.public {
+                chaos.next_outage_at = None; // nothing happened, so it doesn't use up the turn
+            }
+            drop(chaos);
             error(StatusCode::BAD_GATEWAY, e.to_string())
         }
     }
@@ -152,7 +217,11 @@ async fn kill(State(app): AppState, body: Option<Json<Outage>>) -> Response {
 
 /// Drop the connection from our side.
 async fn cut(State(app): AppState, body: Option<Json<Outage>>) -> Response {
-    let Json(outage) = body.unwrap_or_default();
+    let Json(mut outage) = body.unwrap_or_default();
+    outage.hold_secs = capped_hold(&app, outage.hold_secs);
+    if let Some(response) = claim_outage(&app) {
+        return response;
+    }
     set_hold(
         &app,
         outage.hold_secs,
@@ -171,6 +240,9 @@ struct Slow {
 
 /// Make the consumer slow on purpose, until Solami's buffer fills.
 async fn slow(State(app): AppState, Json(slow): Json<Slow>) -> Response {
+    if let Some(response) = public_off(&app, "the slow consumer") {
+        return response;
+    }
     let per_update = slow.per_update_ms.filter(|ms| *ms > 0);
     app.chaos.lock().expect("chaos lock").throttle_ms = per_update;
     if per_update.is_some() {
@@ -187,6 +259,9 @@ struct Patch {
 
 /// Turn the replay-to-live handoff patch on or off.
 async fn patch(State(app): AppState, Json(patch): Json<Patch>) -> Response {
+    if let Some(response) = public_off(&app, "the handoff patch switch") {
+        return response;
+    }
     app.chaos.lock().expect("chaos lock").handoff_patch = patch.enabled;
     app.control.handoff_patch(patch.enabled);
     Json(json!({ "ok": true, "handoffPatch": patch.enabled })).into_response()
@@ -227,5 +302,18 @@ async fn client(app: Arc<App>, mut socket: WebSocket) {
                 Some(Ok(_)) => {}
             },
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::outage_wait;
+
+    #[test]
+    fn public_outages_wait_out_the_cooldown() {
+        assert_eq!(outage_wait(None, 1_000), 0);
+        assert_eq!(outage_wait(Some(5_000), 1_000), 4_000);
+        assert_eq!(outage_wait(Some(5_000), 5_000), 0);
+        assert_eq!(outage_wait(Some(5_000), 9_000), 0);
     }
 }

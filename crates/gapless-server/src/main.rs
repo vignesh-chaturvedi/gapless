@@ -56,6 +56,10 @@ struct Cli {
     /// A small value makes the beyond-the-horizon scenario quick to try.
     #[arg(long, requires = "offline")]
     horizon: Option<u64>,
+    /// A hosted demo anyone can open: one kill or cut every 5 minutes, at most 30 s offline, and
+    /// no slow consumer or patch switch. The Docker image sets it when GAPLESS_PUBLIC=1.
+    #[arg(long)]
+    public: bool,
 }
 
 #[tokio::main]
@@ -156,6 +160,9 @@ async fn main() -> Result<()> {
             throttle_ms: None,
             hold_secs: None,
             can_kill: false,
+            public: cli.public,
+            next_outage_at: None,
+            max_hold_secs: cli.public.then_some(api::PUBLIC_MAX_HOLD_SECS),
         },
         indexer: Default::default(),
         open_incident: None,
@@ -168,6 +175,7 @@ async fn main() -> Result<()> {
         .collect::<Vec<_>>();
     let app = Arc::new(App {
         mode,
+        public: cli.public,
         program,
         replay_horizon,
         control,
@@ -187,6 +195,7 @@ async fn main() -> Result<()> {
             handoff_patch: true,
             throttle_ms: None,
             hold_secs: None,
+            next_outage_at: None,
             pending_label: None,
         }),
     });

@@ -45,6 +45,12 @@ export interface Controls {
   throttleMs: number | null;
   holdSecs: number | null;
   canKill: boolean;
+  /** A hosted demo: one outage per cooldown, holds capped, slow consumer and patch switch off. */
+  public: boolean;
+  /** Public demo: when the next kill or cut is allowed (unix ms). */
+  nextOutageAt: number | null;
+  /** Public demo: the longest a visitor can keep the stream offline. */
+  maxHoldSecs: number | null;
 }
 
 export interface Minute {

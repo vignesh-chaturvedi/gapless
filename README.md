@@ -5,7 +5,7 @@
 [![CI](https://github.com/vignesh-chaturvedi/gapless/actions/workflows/ci.yml/badge.svg)](https://github.com/vignesh-chaturvedi/gapless/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
-**[▶ Watch the 3-minute demo](https://youtu.be/LKObcNlrob0)**: three outages, live on Solana mainnet. With the handoff patch off, Solami dropped 12 transactions and only verification caught them.
+**[▶ Watch the 3-minute demo](https://youtu.be/KY3xxI0dZF0)**: three outages, live on Solana mainnet. With the handoff patch off, Solami dropped 12 transactions and only verification caught them.
 
 ![A live kill on Solana mainnet: the stream goes down, the gap is replayed, the handoff is patched, and the recovered window verifies 2,668 of 2,668 against RPC](docs/media/recovery-loop.gif)
 
@@ -62,6 +62,10 @@ Use a **standard API key with the Developer role**. Gapless uses it for three th
 
 To follow a different program, set `GAPLESS_PROGRAM` in `.env`. The console's indexer panel decodes Pump.fun only, but everything else works for any program.
 
+### Host it
+
+The image runs anywhere that runs containers (Render, Fly.io, a VPS). Set `SOLAMI_API_KEY` as a secret and `GAPLESS_PUBLIC=1`, which makes it safe to share the URL: outages are rationed to one every 5 minutes for everyone, offline time is capped at 30 s, and the slow consumer and the patch switch are off. The container listens on `$PORT` when the host sets one, otherwise 8790. Health check: `/api/health`.
+
 ### Without Docker
 
 You need Rust (via [rustup](https://rustup.rs)), `cmake` (the Solami SDK compiles `protoc`), Node 24 and pnpm.
@@ -86,6 +90,8 @@ Then open http://localhost:8790. For console development, run `pnpm --dir consol
 | `GAPLESS_CONSOLE` | `console/dist` if built | Directory of the built console to serve |
 | `RUST_LOG` | `gapless_server=info,gapless=info` | Log filter |
 | `GAPLESS_SERVER` | `http://127.0.0.1:8790` | Where the console's dev server proxies `/api` and `/ws` |
+| `GAPLESS_PUBLIC` | | Docker: `1` runs a public demo (`--public`): rationed outages, no slow consumer or patch switch |
+| `PORT` | `8790` | Docker: the port to listen on, for hosts that assign one |
 
 `gapless-server` flags:
 
@@ -257,7 +263,7 @@ Measured on mainnet while building this; details and numbers are in [`docs/spike
 - **Processed commitment sees forks.** A transaction seen first on a dead fork is delivered once, at that slot. Verification reports it as orphaned or landed elsewhere.
 - **The server follows one program**, though the library takes any account filter. The indexer decodes Pump.fun only.
 - **The handoff patch needs a second gRPC stream** for a few seconds, so another client on the same key can't be using it at that moment.
-- **No auth on the chaos endpoints.** The server binds to localhost (and Docker publishes only to localhost). Don't expose it.
+- **No auth on the chaos endpoints.** Locally the server binds to localhost (and Docker publishes only to localhost). To share it, run it with `--public` (`GAPLESS_PUBLIC=1`), which rations outages instead of locking them away.
 - The offline fixture is 150 s looped; offline "RPC" answers come from the fixture itself.
 
 ## Development

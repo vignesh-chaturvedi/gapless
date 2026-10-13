@@ -51,13 +51,20 @@ function Action({
 }
 
 /** What the stream is doing right now, in the chaos panel's words. */
-function StreamLine({ snapshot, now }: { snapshot: Snapshot; now: number }) {
+function StreamLine({ snapshot, now, waitMs }: { snapshot: Snapshot; now: number; waitMs: number }) {
   const s = snapshot.state;
   let tone: "live" | "replay" | "gap" | "idle" = "idle";
   let text: ReactNode = "Connecting…";
   if (s.kind === "live" && snapshot.controls.throttleMs) {
     tone = "replay";
     text = `Slow consumer: ${snapshot.controls.throttleMs} ms per update. Solami's buffer is filling.`;
+  } else if (s.kind === "live" && waitMs > 0) {
+    tone = "live";
+    text = (
+      <>
+        Live. The next outage opens in <span className="num text-foreground">{fmt.duration(waitMs)}</span>
+      </>
+    );
   } else if (s.kind === "live") {
     tone = "live";
     text = "Live. Ready to break.";
@@ -108,14 +115,21 @@ export function ChaosPanel({ id }: { id?: string }) {
   const live = state.kind === "live";
   const connected = live || state.kind === "replaying";
   const slow = controls.throttleMs != null;
-  const holdSecs = hold || undefined;
-  const gapSlots = hold && slotMs ? Math.round((hold * 1000) / slotMs) : null;
+  const holds = controls.maxHoldSecs != null ? HOLDS.filter((h) => h.value <= controls.maxHoldSecs!) : HOLDS;
+  const held = holds.some((h) => h.value === hold) ? hold : holds[holds.length - 1].value;
+  const holdSecs = held || undefined;
+  const gapSlots = held && slotMs ? Math.round((held * 1000) / slotMs) : null;
+  const waitMs = controls.nextOutageAt != null ? Math.max(0, controls.nextOutageAt - now) : 0;
+  const cooling = waitMs > 0 ? `Public demo: the next outage is allowed in ${fmt.duration(waitMs)}` : undefined;
+  const publicOff = controls.public ? "Off on this public demo; run Gapless locally to try it" : undefined;
 
   const killBlocked = !live
     ? "The stream isn't live right now"
-    : !offline && !controls.canKill
-      ? "Waiting for Solami to list our stream"
-      : undefined;
+    : cooling
+      ? cooling
+      : !offline && !controls.canKill
+        ? "Waiting for Solami to list our stream"
+        : undefined;
 
   return (
     <Panel id={id} title="Chaos" aside={<span className="hidden sm:inline">break it on purpose</span>} bodyClassName="flex flex-col gap-4 p-4">
@@ -123,7 +137,7 @@ export function ChaosPanel({ id }: { id?: string }) {
         <div>
           <p className="text-sm font-medium">Stay offline after the drop</p>
           <p className="text-xs text-muted-foreground">
-            {hold ? (
+            {held ? (
               <>
                 Opens a gap of about <span className="num">{gapSlots ? fmt.int(gapSlots) : "--"}</span> slots to replay.
               </>
@@ -132,8 +146,21 @@ export function ChaosPanel({ id }: { id?: string }) {
             )}
           </p>
         </div>
-        <Segmented label="Stay offline for" value={hold} options={HOLDS} onChange={setHold} />
+        <Segmented label="Stay offline for" value={held} options={holds} onChange={setHold} />
       </div>
+
+      {controls.public && (
+        <p className="rounded-md border border-hairline bg-muted/40 px-3 py-2 text-xs text-pretty text-muted-foreground">
+          {cooling ? (
+            <>
+              Public demo: one outage every 5 minutes, for everyone. Next one in{" "}
+              <span className="num text-foreground">{fmt.duration(waitMs)}</span>.
+            </>
+          ) : (
+            "Public demo: one outage every 5 minutes, for everyone, up to 30 s offline. Go ahead and break it."
+          )}
+        </p>
+      )}
 
       <div className="divide-y divide-hairline border-t border-hairline pt-3">
         <Action
@@ -170,8 +197,8 @@ export function ChaosPanel({ id }: { id?: string }) {
           control={
             <ConfirmButton
               confirm="Confirm cut"
-              disabled={!connected}
-              disabledReason="The stream isn't connected right now"
+              disabled={!connected || Boolean(cooling)}
+              disabledReason={cooling ?? "The stream isn't connected right now"}
               onConfirm={() => cutStream(holdSecs)}
             >
               Cut
@@ -191,8 +218,8 @@ export function ChaosPanel({ id }: { id?: string }) {
             ) : (
               <ConfirmButton
                 confirm="Confirm slow"
-                disabled={!live}
-                disabledReason="The stream isn't live right now"
+                disabled={!live || Boolean(publicOff)}
+                disabledReason={publicOff ?? "The stream isn't live right now"}
                 onConfirm={() => setSlowConsumer(SLOW_CONSUMER_MS)}
               >
                 Slow down
@@ -211,6 +238,8 @@ export function ChaosPanel({ id }: { id?: string }) {
             <Switch
               id="handoff-patch"
               checked={controls.handoffPatch}
+              disabled={controls.public}
+              title={publicOff}
               onCheckedChange={(on) => setHandoffPatch(on)}
               className="data-checked:bg-verified"
             />
@@ -221,7 +250,7 @@ export function ChaosPanel({ id }: { id?: string }) {
       </div>
 
       <div className="border-t border-hairline pt-3">
-        <StreamLine snapshot={snapshot} now={now} />
+        <StreamLine snapshot={snapshot} now={now} waitMs={waitMs} />
       </div>
     </Panel>
   );

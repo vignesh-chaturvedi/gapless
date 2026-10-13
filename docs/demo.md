@@ -28,7 +28,7 @@ Solami's handoff loss is intermittent: in our runs it hit 7 of 12 recoveries. If
 
 ## The recorded version
 
-The published take is on [YouTube](https://youtu.be/LKObcNlrob0), filmed on 28 Sep 2026, 08:16–08:20 UTC.
+The published film is on [YouTube](https://youtu.be/KY3xxI0dZF0): a narrated cut of one take recorded with `tools/demo` on 28 Sep 2026, 08:16–08:20 UTC.
 
 [`tools/demo`](../tools/demo) films the same script automatically in headless Chrome. It uses real clicks on the real console against live mainnet, with captions and a visible cursor. Waiting (offline time, finalization) runs as a labelled 3× or 4× time-lapse; everything else is real time. A patch-off take in which Solami dropped nothing is cut and retried.
 
